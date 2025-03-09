@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { fetchRegionalPowerData, fetchHistoricalData } from '../services/api';
 import '../styles/PredictionModel.css';
-
 const createModel = () => {
   const model = tf.sequential();
   
@@ -268,10 +267,6 @@ const PredictionModel = () => {
                 </>
               )}
             </button>
-            <div className="model-accuracy">
-              <span>Model Accuracy:</span>
-              <span className="accuracy-value">{modelAccuracy.toFixed(1)}%</span>
-            </div>
           </div>
         </div>
       </div>
@@ -285,7 +280,7 @@ const PredictionModel = () => {
         ) : (
           <>
             <div className="graph-header">
-              <h2>{modelType === 'load' ? 'Load Forecast' : 'Vulnerability Prediction'} - {selectedRegion} Region</h2>
+              <h2>Vulnerability Assessment - {selectedRegion} Region</h2>
               <div className="timeframe-info">
                 <Calendar size={16} />
                 <span>
@@ -295,119 +290,30 @@ const PredictionModel = () => {
               </div>
             </div>
             
-            <div className="prediction-graph">
-              {!powerData[selectedRegion] ? (
-                <div className="no-data-message">
-                  <AlertTriangle size={30} />
-                  <p>No data available for the selected region</p>
+            <div className="vulnerability-graph">
+              <div className="vulnerability-map">
+                <div className="map-region">
+                  <div className={`vulnerability-indicator ${
+                    powerData[selectedRegion]?.vulnerabilityScore > 75 ? 'critical' :
+                    powerData[selectedRegion]?.vulnerabilityScore > 50 ? 'warning' : 'normal'
+                  }`}></div>
                 </div>
-              ) : modelType === 'load' ? (
-                <div className="load-graph">
-                  {/* Simulate graph with dummy elements */}
-                  <div className="graph-y-axis">
-                    <span>100%</span>
-                    <span>75%</span>
-                    <span>50%</span>
-                    <span>25%</span>
-                    <span>0%</span>
-                  </div>
-                  
-                  <div className="graph-container">
-                    <div className="capacity-line"></div>
-                    {generateGraphData().map((point, index) => {
-                      const loadPercentage = powerData[selectedRegion] ? 
-                        (point.load / powerData[selectedRegion].capacity) * 100 : 0;
-                      const barHeight = `${loadPercentage}%`;
-                      const dangerLevel = loadPercentage > 90 ? 'critical' : 
-                                          loadPercentage > 75 ? 'warning' : 'normal';
-                      
-                      return (
-                        <div className="graph-bar-container" key={index}>
-                          <div 
-                            className={`graph-bar ${dangerLevel}`}
-                            style={{ height: barHeight }}
-                          >
-                            <span className="bar-value">{point.load.toLocaleString()} MW</span>
-                          </div>
-                          <span className="bar-label">{point.time}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <div className="vulnerability-graph">
-                  <div className="vulnerability-map">
-                    <div className="map-region">
-                      <div className={`vulnerability-indicator ${
+              </div>
+              <div className="vulnerability-metrics">
+                <div className="metric-item">
+                  <h4>Overall Vulnerability Score</h4>
+                  <div className="score-gauge">
+                    <div 
+                      className={`score-value ${
                         powerData[selectedRegion]?.vulnerabilityScore > 75 ? 'critical' :
                         powerData[selectedRegion]?.vulnerabilityScore > 50 ? 'warning' : 'normal'
-                      }`}></div>
-                    </div>
+                      }`}
+                      style={{ width: `${powerData[selectedRegion]?.vulnerabilityScore || 0}%` }}
+                    ></div>
                   </div>
-                  <div className="vulnerability-metrics">
-                    <div className="metric-item">
-                      <h4>Overall Vulnerability Score</h4>
-                      <div className="score-gauge">
-                        <div 
-                          className={`score-value ${
-                            powerData[selectedRegion]?.vulnerabilityScore > 75 ? 'critical' :
-                            powerData[selectedRegion]?.vulnerabilityScore > 50 ? 'warning' : 'normal'
-                          }`}
-                          style={{ width: `${powerData[selectedRegion]?.vulnerabilityScore || 0}%` }}
-                        ></div>
-                      </div>
-                      <span className="score-number">{powerData[selectedRegion]?.vulnerabilityScore || 0}/100</span>
-                    </div>
-                    
-                    <div className="vulnerability-factors">
-                      <div className="factor-item">
-                        <span className="factor-name">Weather Vulnerability</span>
-                        <div className="factor-score">
-                          <div 
-                            className="factor-bar"
-                            style={{ width: `${powerData[selectedRegion]?.weatherVulnerability || 0}%` }}
-                          ></div>
-                        </div>
-                        <span className="factor-value">{powerData[selectedRegion]?.weatherVulnerability || 0}%</span>
-                      </div>
-                      
-                      <div className="factor-item">
-                        <span className="factor-name">Infrastructure Age</span>
-                        <div className="factor-score">
-                          <div 
-                            className="factor-bar"
-                            style={{ width: `${powerData[selectedRegion]?.infrastructureAge || 0}%` }}
-                          ></div>
-                        </div>
-                        <span className="factor-value">{powerData[selectedRegion]?.infrastructureAge || 0}%</span>
-                      </div>
-                      
-                      <div className="factor-item">
-                        <span className="factor-name">Load vs Capacity</span>
-                        <div className="factor-score">
-                          <div 
-                            className="factor-bar"
-                            style={{ width: `${powerData[selectedRegion]?.loadCapacityRatio || 0}%` }}
-                          ></div>
-                        </div>
-                        <span className="factor-value">{powerData[selectedRegion]?.loadCapacityRatio || 0}%</span>
-                      </div>
-                      
-                      <div className="factor-item">
-                        <span className="factor-name">Redundancy</span>
-                        <div className="factor-score">
-                          <div 
-                            className="factor-bar"
-                            style={{ width: `${powerData[selectedRegion]?.redundancy || 0}%` }}
-                          ></div>
-                        </div>
-                        <span className="factor-value">{powerData[selectedRegion]?.redundancy || 0}%</span>
-                      </div>
-                    </div>
-                  </div>
+                  <span className="score-number">{powerData[selectedRegion]?.vulnerabilityScore || 0}/100</span>
                 </div>
-              )}
+              </div>
             </div>
           </>
         )}
@@ -464,21 +370,13 @@ const PredictionModel = () => {
             <h3>Peak Load</h3>
             <div className="metric-value">
               <span>{(powerData[selectedRegion]?.peakLoad || 0).toLocaleString()} MW</span>
-              <div className="trend-indicator">
-                <ArrowUpRight className="trend-up" size={16} />
-                <span>+5.2%</span>
-              </div>
             </div>
           </div>
           
           <div className="metric-card">
-            <h3>Avg. Capacity Utilization</h3>
+            <h3>Capacity Utilization</h3>
             <div className="metric-value">
-              <span>{powerData[selectedRegion]?.avgUtilization || 0}%</span>
-              <div className="trend-indicator">
-                <ArrowUpRight className="trend-up" size={16} />
-                <span>+3.7%</span>
-              </div>
+              <span>{powerData[selectedRegion]?.capacityUtilization || 0}%</span>
             </div>
           </div>
           
@@ -486,21 +384,13 @@ const PredictionModel = () => {
             <h3>Vulnerability Score</h3>
             <div className="metric-value">
               <span>{powerData[selectedRegion]?.vulnerabilityScore || 0}/100</span>
-              <div className="trend-indicator">
-                <ArrowUpRight className="trend-up" size={16} />
-                <span>+8.1%</span>
-              </div>
             </div>
           </div>
           
           <div className="metric-card">
             <h3>Alert Frequency</h3>
             <div className="metric-value">
-              <span>{powerData[selectedRegion]?.alertFrequency || 0}/week</span>
-              <div className="trend-indicator">
-                <ArrowUpRight className="trend-up" size={16} />
-                <span>+12.3%</span>
-              </div>
+              <span>{powerData[selectedRegion]?.alertFrequency || 0} per day</span>
             </div>
           </div>
         </div>

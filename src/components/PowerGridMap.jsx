@@ -36,29 +36,33 @@ const PowerGridMap = () => {
 
   // City data configuration
   const cities = [
-    { id: "nyc", name: "New York", region: "Northeast", coordinates: [83, 29], size: 1.5 },
-    { id: "bos", name: "Boston", region: "Northeast", coordinates: [86, 25], size: 1.3 },
-    { id: "phl", name: "Philadelphia", region: "Northeast", coordinates: [81, 33], size: 1.2 },
-    { id: "pit", name: "Pittsburgh", region: "Northeast", coordinates: [75, 31], size: 1.0 },
+    // Northeast cities
+    { id: "nyc", name: "New York", region: "Northeast", coordinates: [77, 30], size: 1.5 },
+    { id: "bos", name: "Boston", region: "Northeast", coordinates: [79, 29], size: 1.3 },
+    { id: "phl", name: "Philadelphia", region: "Northeast", coordinates: [74, 33], size: 1.2 },
+    { id: "pit", name: "Pittsburgh", region: "Northeast", coordinates: [69, 33], size: 1.0 },
     
-    { id: "chi", name: "Chicago", region: "Midwest", coordinates: [63, 30], size: 1.4 },
-    { id: "det", name: "Detroit", region: "Midwest", coordinates: [69, 27], size: 1.1 },
-    { id: "msp", name: "Minneapolis", region: "Midwest", coordinates: [52, 22], size: 1.0 },
-    { id: "stl", name: "St. Louis", region: "Midwest", coordinates: [58, 35], size: 1.0 },
-    { id: "cin", name: "Cincinnati", region: "Midwest", coordinates: [65, 34], size: 0.9 },
+    // Midwest cities
+    { id: "chi", name: "Chicago", region: "Midwest", coordinates: [59, 33], size: 1.4 },
+    { id: "det", name: "Detroit", region: "Midwest", coordinates: [63, 31], size: 1.1 },
+    { id: "msp", name: "Minneapolis", region: "Midwest", coordinates: [53, 27], size: 1.0 },
+    { id: "stl", name: "St. Louis", region: "Midwest", coordinates: [55, 40], size: 1.0 },
+    { id: "cin", name: "Cincinnati", region: "Midwest", coordinates: [65, 35], size: 0.9 },
     
-    { id: "atl", name: "Atlanta", region: "South", coordinates: [71, 49], size: 1.3 },
-    { id: "mia", name: "Miami", region: "South", coordinates: [78, 60], size: 1.2 },
-    { id: "hou", name: "Houston", region: "South", coordinates: [53, 55], size: 1.3 },
-    { id: "dal", name: "Dallas", region: "South", coordinates: [50, 48], size: 1.2 },
-    { id: "sat", name: "San Antonio", region: "South", coordinates: [47, 54], size: 0.9 },
+    // South cities
+    { id: "atl", name: "Atlanta", region: "South", coordinates: [65, 47], size: 1.3 },
+    { id: "mia", name: "Miami", region: "South", coordinates: [73, 60], size: 1.2 },
+    { id: "hou", name: "Houston", region: "South", coordinates: [50, 55], size: 1.3 },
+    { id: "dal", name: "Dallas", region: "South", coordinates: [47, 48], size: 1.2 },
+    { id: "sat", name: "San Antonio", region: "South", coordinates: [44, 54], size: 0.9 },
     
-    { id: "lax", name: "Los Angeles", region: "West", coordinates: [18, 42], size: 1.5 },
-    { id: "sfo", name: "San Francisco", region: "West", coordinates: [14, 36], size: 1.3 },
-    { id: "sea", name: "Seattle", region: "West", coordinates: [18, 22], size: 1.2 },
-    { id: "phx", name: "Phoenix", region: "West", coordinates: [28, 46], size: 1.1 },
-    { id: "den", name: "Denver", region: "West", coordinates: [38, 34], size: 1.0 },
-    { id: "san", name: "San Diego", region: "West", coordinates: [18, 46], size: 0.9 }
+    // West cities
+    { id: "lax", name: "Los Angeles", region: "West", coordinates: [15, 42], size: 1.5 },
+    { id: "sfo", name: "San Francisco", region: "West", coordinates: [13, 36], size: 1.3 },
+    { id: "sea", name: "Seattle", region: "West", coordinates: [18, 19], size: 1.2 },
+    { id: "phx", name: "Phoenix", region: "West", coordinates: [25, 46], size: 1.1 },
+    { id: "den", name: "Denver", region: "West", coordinates: [35, 37], size: 1.0 },
+    { id: "san", name: "San Diego", region: "West", coordinates: [18, 46.5], size: 0.9 }
   ];
 
   // Track window resize
@@ -197,24 +201,9 @@ const PowerGridMap = () => {
     return connections;
   };
 
-  // Adding the crucial return statement that was missing
+  // Remove the predictive analytics tab button from the navigation
   return (
     <div className="power-grid-map-container">
-      {loading && (
-        <div className="loading-overlay">
-          <div className="loading-spinner"></div>
-          <p>Loading power grid data...</p>
-        </div>
-      )}
-      
-      {dataError && (
-        <div className="error-message">
-          <AlertTriangle size={32} />
-          <p>{dataError}</p>
-          <button onClick={() => window.location.reload()}>Retry</button>
-        </div>
-      )}
-      
       <div className="map-controls">
         <div className="search-container" ref={searchInputRef}>
           <div className="search-input-wrapper">

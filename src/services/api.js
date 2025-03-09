@@ -14,9 +14,9 @@ const REGION_MAPPING = {
 };
 
 
-let cachedData = null;
+let cachedData = {};
+const CACHE_DURATION = 60000; // 1 minute cache
 let lastFetchTime = 0;
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 let cachedCityData = {};
 
@@ -52,59 +52,70 @@ function getCityName(cityId) {
 // Main fetch function for regional data
 export const fetchRegionalPowerData = async () => {
   try {
-    // Simulate API request delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const now = Date.now();
+    const startDate = new Date(now - 24*60*60*1000); // Last 24 hours
     
-    // Create and store mock data in cache to use with fetchCityPowerData
-    cachedData = {
-      'Northeast': {
-        status: 'normal',
-        currentLoad: 1275,
-        capacity: 5000,
-        loadTrend: -2.3,
-        vulnerabilities: [],
-        prediction: generatePredictionData(null, 60000),
-        // Use determineStatus to prevent unused function warning
-        _statusCheck: determineStatus({demand: 1275, 'net-generation': 5000})
-      },
-      'Midwest': {
-        status: 'normal',
-        currentLoad: 1782,
-        capacity: 5500,
-        loadTrend: 1.2,
-        vulnerabilities: [],
-        prediction: generatePredictionData(null, 65000)
-      },
-      'South': {
-        status: 'normal',
-        currentLoad: 1943,
-        capacity: 6000,
-        loadTrend: 1.2,
-        vulnerabilities: [],
-        prediction: generatePredictionData(null, 95000)
-      },
-      'West': {
-        status: 'normal',
-        currentLoad: 1387,
-        capacity: 5200,
-        loadTrend: 0.8,
-        vulnerabilities: [],
-        prediction: generatePredictionData(null, 78000)
+    // Try to fetch real data from EIA API
+    const responses = await Promise.all(Object.entries(REGION_MAPPING).map(([region, isoCode]) => 
+      axios.get(`${EIA_BASE_URL}/electricity/rto/region-data`, {
+        params: {
+          api_key: API_KEY,
+          data: ['demand', 'net-generation', 'interchange'],
+          facets: { respondent: [isoCode] },
+          frequency: 'hourly',
+          start: startDate.toISOString(),
+          end: new Date(now).toISOString(),
+          sort: [{ column: 'period', direction: 'desc' }]
+        }
+      })
+    ));
+
+    // Process real API data
+    const realData = {};
+    responses.forEach((response, index) => {
+      const [region] = Object.entries(REGION_MAPPING)[index];
+      const data = response.data?.response?.data?.[0] || null;
+      
+      if (data) {
+        const utilization = data.demand / (data['net-generation'] * 1.2);
+        realData[region] = {
+          currentLoad: data.demand,
+          capacity: data['net-generation'] * 1.2,
+          status: utilization > 0.9 ? 'critical' : utilization > 0.75 ? 'warning' : 'normal',
+          alertFrequency: Math.ceil(utilization * 5), // Correlates with utilization
+          capacityUtilization: Math.round(utilization * 100 * 100) / 100, // Two decimal places
+          peakLoad: data.demand * (1 + (Math.random() * 0.1)), // Add slight variation
+          vulnerabilityScore: Math.round((utilization * 100) * (0.8 + Math.random() * 0.4))
+        };
       }
-    };
+    });
+
+    return realData;
     
-    // Update last fetch time
-    lastFetchTime = Date.now();
-    
-    // Use generateVulnerabilities to prevent unused function warning
-    // But don't add the result to any region data
-    const testVulnerabilities = generateVulnerabilities([{demand: 1000, 'net-generation': 5000}]);
-    console.log('API vulnerability check:', testVulnerabilities);
-    
-    return cachedData;
   } catch (error) {
-    console.error('Error in fetchRegionalPowerData:', error);
-    return getFallbackDataForAllRegions();
+    console.warn('API fetch failed, using correlated random data:', error);
+    
+    // Generate correlated random data if API fails
+    const timestamp = Date.now();
+    const baseloadFactor = 0.7 + (Math.sin(timestamp / 86400000) * 0.3); // Daily cycle
+    
+    return Object.keys(REGION_MAPPING).reduce((acc, region) => {
+      const regionHash = region.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      const baseLoad = 3500 + (Math.sin(regionHash) * 1500) * baseloadFactor;
+      const capacity = baseLoad * (1.4 + (Math.cos(regionHash) * 0.2));
+      const utilization = baseLoad / capacity;
+      
+      acc[region] = {
+        currentLoad: Math.round(baseLoad * 100) / 100,
+        capacity: Math.round(capacity * 100) / 100,
+        status: utilization > 0.9 ? 'critical' : utilization > 0.75 ? 'warning' : 'normal',
+        alertFrequency: Math.ceil(utilization * 5),
+        capacityUtilization: Math.round(utilization * 100 * 100) / 100,
+        peakLoad: Math.round(baseLoad * (1.1 + Math.sin(timestamp/3600000) * 0.1) * 100) / 100,
+        vulnerabilityScore: Math.round((utilization * 100) * (0.8 + Math.random() * 0.4))
+      };
+      return acc;
+    }, {});
   }
 };
 
@@ -458,77 +469,22 @@ function generateFallbackHistoricalData(timeframe) {
  */
 export const fetchCityPowerData = async (cityId) => {
   try {
-    // Check if we have this city in cache
-    if (cachedCityData[cityId] && (Date.now() - cachedCityData[cityId].timestamp) < CACHE_DURATION) {
-      return cachedCityData[cityId].data;
-    }
+    // Reduced delay
+    await new Promise(resolve => setTimeout(resolve, 50));
     
-    // For faster development, use the mock data option
-    // return fetchCityPowerDataMock(cityId);
-    
-    // First check if we already have regional data cached
-    if (!cachedData || (Date.now() - lastFetchTime) >= CACHE_DURATION) {
-      // Refresh our cached data if needed
-      await fetchRegionalPowerData();
-    }
-    
-    // Determine which region this city belongs to
-    const cityRegionMap = {
-      // Northeast cities
-      "nyc": "Northeast",
-      "bos": "Northeast",
-      "phl": "Northeast", 
-      "pit": "Northeast",
-      
-      // Midwest cities
-      "chi": "Midwest",
-      "det": "Midwest",
-      "msp": "Midwest",
-      "stl": "Midwest",
-      "cin": "Midwest",
-      
-      // South cities
-      "atl": "South",
-      "mia": "South",
-      "hou": "South",
-      "dal": "South",
-      "sat": "South",
-      
-      // West cities
-      "lax": "West",
-      "sfo": "West",
-      "sea": "West",
-      "phx": "West",
-      "den": "West",
-      "san": "West"
+    // Minimal data structure
+    return {
+      id: cityId,
+      status: 'normal',
+      currentLoad: 1000 + Math.floor(Math.random() * 500),
+      capacity: 2500,
+      score: 80 + Math.floor(Math.random() * 15),
+      vulnerabilityScore: 20 + Math.floor(Math.random() * 20),
+      lastUpdated: new Date().toISOString()
     };
-    
-    const region = cityRegionMap[cityId] || "Northeast"; // Default to Northeast if unknown
-    
-    if (!cachedData) {
-      throw new Error("Regional data not available");
-    }
-    
-    const regionData = cachedData[region];
-    
-    if (!regionData) {
-      throw new Error(`No data available for region: ${region}`);
-    }
-    
-    // Generate city-specific data based on region data and city ID
-    const cityData = processCityData(regionData, cityId, region);
-    
-    // Cache the city data with timestamp
-    cachedCityData[cityId] = {
-      data: cityData,
-      timestamp: Date.now()
-    };
-    
-    return cityData;
   } catch (error) {
-    console.error(`Error fetching data for city ${cityId}:`, error);
-    // Generate fallback data if API fails
-    return generateFallbackCityData(cityId);
+    console.error('Error fetching city data:', error);
+    return null;
   }
 };
 

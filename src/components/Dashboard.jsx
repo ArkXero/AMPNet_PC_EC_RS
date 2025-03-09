@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  BarChart3, 
   Globe, 
   AlertTriangle, 
   BrainCircuit, 
   Zap, 
-  TrendingUp, 
   ChevronRight,
   Activity,
   AlertCircle,
-  Lightbulb  // Add this
+  Lightbulb
 } from 'lucide-react';
 import { fetchRegionalPowerData, initializeLiveUpdates } from '../services/api';
 import '../styles/Dashboard.css';
@@ -152,12 +150,6 @@ const Dashboard = () => {
             onClick={() => setActiveTab('alerts')}
           >
             Alerts & Vulnerabilities
-          </button>
-          <button 
-            className={activeTab === 'predictions' ? 'active' : ''} 
-            onClick={() => setActiveTab('predictions')}
-          >
-            Predictive Analytics
           </button>
         </div>
       </div>
@@ -420,151 +412,6 @@ const Dashboard = () => {
                     )}
                   </>
                 )}
-              </div>
-            </div>
-          )}
-          
-          {activeTab === 'predictions' && (
-            <div className="dashboard-content predictions-tab">
-              <div className="prediction-overview">
-                <h2>AI-Powered Load Predictions</h2>
-                <p className="section-description">
-                  Our advanced machine learning models predict power demand across all regions for the next 24 hours, 
-                  helping you proactively manage resources and prevent potential failures.
-                </p>
-                
-                <div className="prediction-cards">
-                  {Object.entries(powerData).map(([region, data]) => (
-                    <div className="prediction-card" key={region}>
-                      <div className="prediction-header">
-                        <h3>{region} Region</h3>
-                      </div>
-                      
-                      <div className="prediction-chart">
-                        <div className="chart-container">
-                          <div className="chart-y-axis">
-                            <span>{Math.ceil(data.capacity * 0.9)} MW</span>
-                            <span>{Math.ceil(data.capacity * 0.7)} MW</span>
-                            <span>{Math.ceil(data.capacity * 0.5)} MW</span>
-                          </div>
-                          <div className="chart-bars">
-                            {data.prediction.map((point, index) => (
-                              <div className="chart-bar-container" key={index}>
-                                <div 
-                                  className="chart-bar" 
-                                  style={{ 
-                                    height: `${(point.load / data.capacity) * 100}%`,
-                                    backgroundColor: (point.load / data.capacity) > 0.9 ? '#ff4d4d' : 
-                                                    (point.load / data.capacity) > 0.75 ? '#ffaa00' : '#4caf50'
-                                  }}
-                                  title={`${point.time}: ${point.load.toLocaleString()} MW`}
-                                ></div>
-                                {index % 3 === 0 && (
-                                  <span className="time-label">{point.time}</span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        <div className="prediction-metrics">
-                          <div className="prediction-metric">
-                            <span className="metric-label">Max Predicted:</span>
-                            <span className="metric-value">
-                              {Math.max(...data.prediction.map(p => p.load)).toLocaleString()} MW
-                            </span>
-                          </div>
-                          <div className="prediction-metric">
-                            <span className="metric-label">Peak Time:</span>
-                            <span className="metric-value">
-                              {data.prediction.reduce((max, point) => 
-                                point.load > max.load ? point : max
-                              ).time}
-                            </span>
-                          </div>
-                          <div className="prediction-metric">
-                            <span className="metric-label">Risk Level:</span>
-                            <span className={`metric-value ${
-                              Math.max(...data.prediction.map(p => p.load)) / data.capacity > 0.9 ? 'critical' :
-                              Math.max(...data.prediction.map(p => p.load)) / data.capacity > 0.75 ? 'warning' : 'normal'
-                            }`}>
-                              {Math.max(...data.prediction.map(p => p.load)) / data.capacity > 0.9 ? 'High' :
-                               Math.max(...data.prediction.map(p => p.load)) / data.capacity > 0.75 ? 'Medium' : 'Low'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="ai-recommendations">
-                  <h2>AI-Generated Recommendations</h2>
-                  <div className="recommendations-list">
-                    <div className="recommendation-item">
-                      <div className="recommendation-icon">
-                        <BrainCircuit size={28} />
-                      </div>
-                      <div className="recommendation-content">
-                        <h3>South Region Load Reduction</h3>
-                        <p>Implement demand response program for large industrial consumers between 2PM-6PM to reduce peak load by 15%.</p>
-                        <div className="impact-gauge">
-                          <span>Potential Impact:</span>
-                          <div className="impact-rating">
-                            <span className="filled"></span>
-                            <span className="filled"></span>
-                            <span className="filled"></span>
-                            <span className="filled"></span>
-                            <span className="filled"></span>
-                          </div>
-                        </div>
-                        <button className="implement-btn">Implement Recommendation</button>
-                      </div>
-                    </div>
-                    
-                    <div className="recommendation-item">
-                      <div className="recommendation-icon">
-                        <BrainCircuit size={28} />
-                      </div>
-                      <div className="recommendation-content">
-                        <h3>Midwest Maintenance Prioritization</h3>
-                        <p>Schedule emergency maintenance for the Northwestern substation transformers within 48 hours to prevent potential failures.</p>
-                        <div className="impact-gauge">
-                          <span>Potential Impact:</span>
-                          <div className="impact-rating">
-                            <span className="filled"></span>
-                            <span className="filled"></span>
-                            <span className="filled"></span>
-                            <span className="filled"></span>
-                            <span></span>
-                          </div>
-                        </div>
-                        <button className="implement-btn">Implement Recommendation</button>
-                      </div>
-                    </div>
-                    
-                    <div className="recommendation-item">
-                      <div className="recommendation-icon">
-                        <BrainCircuit size={28} />
-                      </div>
-                      <div className="recommendation-content">
-                        <h3>West Region Renewable Integration</h3>
-                        <p>Adjust battery storage charging schedule to optimize for predicted solar output dips between 4PM-6PM tomorrow.</p>
-                        <div className="impact-gauge">
-                          <span>Potential Impact:</span>
-                          <div className="impact-rating">
-                            <span className="filled"></span>
-                            <span className="filled"></span>
-                            <span className="filled"></span>
-                            <span></span>
-                            <span></span>
-                          </div>
-                        </div>
-                        <button className="implement-btn">Implement Recommendation</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           )}

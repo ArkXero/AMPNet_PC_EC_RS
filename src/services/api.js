@@ -24,6 +24,35 @@ let cachedCityData = {};
  * Simulates API calls with mock data for development
  */
 
+// Add this function near the top of your file
+
+function getCityName(cityId) {
+  const cityNames = {
+    "nyc": "New York",
+    "bos": "Boston",
+    "phl": "Philadelphia",
+    "pit": "Pittsburgh",
+    "chi": "Chicago",
+    "det": "Detroit",
+    "msp": "Minneapolis",
+    "stl": "St. Louis",
+    "cin": "Cincinnati",
+    "atl": "Atlanta",
+    "mia": "Miami",
+    "hou": "Houston",
+    "dal": "Dallas",
+    "sat": "San Antonio",
+    "lax": "Los Angeles",
+    "sfo": "San Francisco",
+    "sea": "Seattle",
+    "phx": "Phoenix",
+    "den": "Denver",
+    "san": "San Diego"
+  };
+  
+  return cityNames[cityId] || "Unknown City";
+}
+
 // Main fetch function for regional data
 export const fetchRegionalPowerData = async () => {
   try {

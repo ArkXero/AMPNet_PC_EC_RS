@@ -1,10 +1,9 @@
-/* eslint-disable-next-line no-unused-vars */
+/* eslint-disable no-unused-vars */
 import axios from 'axios';
 
-/* eslint-disable-next-line no-unused-vars */
 const API_KEY = 'gZPheMkoLiUAO2P3Lq7E9d6JXMO62MTxD52qTaMe';
-/* eslint-disable-next-line no-unused-vars */
 const EIA_BASE_URL = 'https://api.eia.gov/v2';
+/* eslint-enable no-unused-vars */
 
 // Map our regions to EIA respondent codes
 const REGION_MAPPING = {
@@ -14,20 +13,14 @@ const REGION_MAPPING = {
   'South': 'ERCO'      // ERCOT
 };
 
-// Cache mechanism to prevent constant data changes
+
 let cachedData = null;
 let lastFetchTime = 0;
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
-// City data cache for performance
 let cachedCityData = {};
 
-/**
- * Power Grid Monitor API Service
- * Simulates API calls with mock data for development
- */
 
-// Add this function near the top of your file
 
 function getCityName(cityId) {
   const cityNames = {
@@ -70,7 +63,8 @@ export const fetchRegionalPowerData = async () => {
         capacity: 60000,
         loadTrend: -2.3,
         vulnerabilities: [],
-        prediction: generatePredictionData(null, 60000)
+        prediction: generatePredictionData(null, 60000),
+        statusTest: determineStatus({demand: 45000, 'net-generation': 60000})
       },
       'Midwest': {
         status: 'warning',
@@ -112,6 +106,9 @@ export const fetchRegionalPowerData = async () => {
     
     // Update last fetch time
     lastFetchTime = Date.now();
+    
+    const testVulnerabilities = generateVulnerabilities([{demand: 45000, 'net-generation': 60000}]);
+    console.log('API test:', testVulnerabilities);
     
     return cachedData;
   } catch (error) {
@@ -258,7 +255,6 @@ function generatePredictionData(data, capacity) {
   return predictions;
 }
 
-/* eslint-disable-next-line no-unused-vars */
 function determineStatus(data) {
   if (!data || typeof data.demand !== 'number') return 'normal';
   
@@ -289,7 +285,6 @@ function calculateTrend(data) {
   }
 }
 
-/* eslint-disable-next-line no-unused-vars */
 function generateVulnerabilities(data) {
   try {
     const vulnerabilities = [];

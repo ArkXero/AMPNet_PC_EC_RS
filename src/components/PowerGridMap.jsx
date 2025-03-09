@@ -490,350 +490,317 @@ const PowerGridMap = () => {
 
   return (
     <div className="power-grid-map-container">
+      {/* Loading indicator */}
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <div className="loading-text">Loading power grid data...</div>
+        </div>
+      )}
+      
+      {/* Error display */}
+      {dataError && (
+        <div className="error-message">
+          <AlertTriangle size={32} color="#f44336" />
+          <p>{dataError}</p>
+          <button onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      )}
+      
+      {/* Map controls */}
       <div className="map-controls">
         <div className="search-container" ref={searchInputRef}>
           <div className="search-input-wrapper">
             <Search size={18} className="search-icon" />
             <input
               type="text"
-              placeholder="Search by city, region, or status..."
+              placeholder="Search for a city..."
               value={searchTerm}
               onChange={handleSearchInput}
-              onFocus={() => searchTerm.length >= 2 && setShowSearchResults(true)}
             />
             {searchTerm && (
-              <button 
-                className="clear-search" 
-                onClick={() => {
-                  setSearchTerm('');
-                  setFilteredCities([]);
-                  setShowSearchResults(false);
-                }}
-              >
-                ×
-              </button>
+              <button className="clear-search" onClick={() => {
+                setSearchTerm('');
+                setFilteredCities([]);
+                setShowSearchResults(false);
+              }}>×</button>
             )}
           </div>
           
-          {showSearchResults && filteredCities.length > 0 && (
+          {showSearchResults && (
             <div className="search-results">
-              {filteredCities.map(city => (
-                <div 
-                  key={city.name} 
-                  className={`search-result-item ${getStatusClass(city.region)}`}
-                  onClick={() => selectCity(city)}
-                >
-                  <div className="result-main">
-                    <span className="result-city">{city.name}</span>
-                    <span className="result-region">{city.region}</span>
+              {filteredCities.length > 0 ? (
+                filteredCities.map(city => (
+                  <div
+                    key={city.id}
+                    className="search-result-item"
+                    onClick={() => selectCity(city)}
+                  >
+                    <div className="result-main">
+                      <div className="result-city">{city.name}</div>
+                      <div className="result-region">{city.region}</div>
+                    </div>
+                    <div
+                      className={`result-status status-${getStatusClass(city.region)}`}
+                      style={{ backgroundColor: getStatusColor(city.region) }}
+                    ></div>
                   </div>
-                  <div className="result-status" style={{ backgroundColor: getStatusColor(city.region) }}></div>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {showSearchResults && filteredCities.length === 0 && searchTerm.length >= 2 && (
-            <div className="search-results">
-              <div className="no-results">No cities found matching "{searchTerm}"</div>
+                ))
+              ) : (
+                <div className="no-results">No cities found</div>
+              )}
             </div>
           )}
         </div>
         
         <div className="legend">
           <div className="legend-item">
-            <span className="legend-color healthy"></span>
+            <div className="legend-color healthy"></div>
             <span>Normal</span>
           </div>
           <div className="legend-item">
-            <span className="legend-color warning"></span>
+            <div className="legend-color warning"></div>
             <span>Warning</span>
           </div>
           <div className="legend-item">
-            <span className="legend-color critical"></span>
+            <div className="legend-color critical"></div>
             <span>Critical</span>
           </div>
         </div>
       </div>
       
-      {loading && !selectedRegion && (
-        <div className="loading-overlay">
-          <div className="loading-spinner"></div>
-          <div className="loading-text">Loading Power Grid Data...</div>
-        </div>
-      )}
-      
-      {dataError && !loading && (
-        <div className="error-message">
-          <AlertTriangle size={24} />
-          <p>{dataError}</p>
-          <button onClick={() => window.location.reload()}>Retry</button>
-        </div>
-      )}
-      
+      {/* Map view */}
       <div className="map-view-container" ref={mapRef}>
-        {/* USA Map background image */}
         <img src={usaMapImage} alt="USA Map" className="usa-map-background" />
         
-        <svg 
-          viewBox="0 0 100 80" 
-          preserveAspectRatio="xMidYMid meet"
-          className="usa-map-overlay"
-        >
-          {/* Power line connections */}
+        <svg className="usa-map-overlay" viewBox="0 0 100 70">
+          {/* Region Connections */}
           {renderConnections()}
           
-          {/* City markers */}
-          {renderCities()}
+          {/* Cities */}
+          {cities.map(city => {
+            const nodeSize = getNodeSize(city);
+            const isSelected = selectedCity && selectedCity.name === city.name;
+            const isInSelectedRegion = selectedRegion === city.region;
+            const statusClass = getStatusClass(city.region);
+            
+            return (
+              <g
+                key={city.id}
+                className={`city-marker ${isSelected ? 'city-selected' : ''} ${selectedRegion && !isInSelectedRegion ? 'city-faded' : ''}`}
+                data-city={city.name}
+                transform={`translate(${city.coordinates[0]}, ${city.coordinates[1]})`}
+                onClick={() => selectCity(city)}
+              >
+                <circle
+                  className={`power-node ${statusClass}`}
+                  r={nodeSize}
+                  fill={getStatusColor(city.region)}
+                  stroke="#ffffff"
+                  strokeWidth="0.3"
+                />
+                
+                {/* Only show labels for selected city or large cities */}
+                {(isSelected || city.size > 1.1 || (isInSelectedRegion && city.size > 1)) && (
+                  <text
+                    className="city-label"
+                    y={nodeSize + 1}
+                    textAnchor="middle"
+                    fontSize="1.2"
+                    fill="#333"
+                    stroke="#fff"
+                    strokeWidth="0.3"
+                    paintOrder="stroke"
+                  >
+                    {city.name}
+                  </text>
+                )}
+              </g>
+            );
+          })}
           
-          {/* Region labels */}
-          {Object.entries(regions).map(([regionName, regionData]) => (
+          {/* Region Labels */}
+          {Object.entries(regions).map(([name, data]) => (
             <text
-              key={regionName}
-              x={`${regionData.coordinates[0]}%`}
-              y={`${regionData.coordinates[1]}%`}
-              fontSize={selectedRegion === regionName ? "3.5" : "3"}
-              fontWeight="bold"
-              fill={getStatusColor(regionName)}
+              key={data.id}
+              className={`region-label ${selectedRegion === name ? 'region-selected' : ''}`}
+              x={data.coordinates[0]}
+              y={data.coordinates[1]}
+              textAnchor="middle"
+              fontSize={selectedRegion === name ? "2.5" : "2"}
+              opacity={selectedRegion && selectedRegion !== name ? 0.5 : 0.8}
+              fontWeight={selectedRegion === name ? "bold" : "normal"}
+              fill={getStatusColor(name)}
               stroke="#fff"
-              strokeWidth="0.7"
+              strokeWidth="0.4"
               paintOrder="stroke"
-              opacity={selectedRegion === regionName ? "1" : "0.8"}
-              className={`region-label ${selectedRegion === regionName ? 'region-selected' : ''}`}
               onClick={() => {
-                setSelectedRegion(regionName);
+                setSelectedRegion(name === selectedRegion ? null : name);
                 setSelectedCity(null);
               }}
             >
-              {regionName}
+              {name}
             </text>
           ))}
         </svg>
       </div>
       
-      {/* Region/City details panel */}
-      {selectedRegion && powerData[selectedRegion] && (
+      {/* Details panel when a city or region is selected */}
+      {(selectedRegion || selectedCity) && (
         <div className="region-details-panel" ref={detailsPanelRef}>
           <div className="panel-header">
-            <h2>{selectedCity ? selectedCity.name : selectedRegion} {selectedCity ? `(${selectedRegion})` : 'Region'}</h2>
-            <button className="close-btn" onClick={() => {
-              setSelectedRegion(null);
-              setSelectedCity(null);
-            }}>×</button>
+            <h2>{selectedCity ? selectedCity.name : selectedRegion}</h2>
+            <button 
+              className="close-btn" 
+              onClick={() => {
+                setSelectedRegion(null);
+                setSelectedCity(null);
+              }}
+            >
+              &times;
+            </button>
           </div>
           
           <div className="panel-content">
-            {loading && (
-              <div className="panel-loading">
-                <div className="loading-spinner small"></div>
-                <p>Loading latest data...</p>
-              </div>
-            )}
-            
-            {!loading && (
-              <>
+            {selectedCity && cityData[selectedCity.id] ? (
+              <div className="city-details">
                 <div className="status-indicator">
-                  <div className={`status-badge ${selectedCity && cityData[selectedCity.id] ? 
-                    (cityData[selectedCity.id].status || 'normal') : 
-                    powerData[selectedRegion].status}`}>
-                    {selectedCity && cityData[selectedCity.id] ? 
-                      getStatusText(cityData[selectedCity.id].status || 'normal') : 
-                      getStatusText(powerData[selectedRegion].status)}
+                  <div className={`status-badge ${cityData[selectedCity.id].status}`}>
+                    {getStatusText(cityData[selectedCity.id].status)}
+                  </div>
+                  <div className="last-updated">
+                    Last updated: {formatTimestamp(cityData[selectedCity.id].lastUpdated)}
                   </div>
                 </div>
-                
-                {selectedCity && cityData[selectedCity.id] && (
-                  <div className="selected-city-info">
-                    <div className="city-meta-grid">
-                      <div className="meta-item">
-                        <Activity size={16} />
-                        <span className="meta-label">Status:</span>
-                        <span className={`meta-value ${cityData[selectedCity.id].status}`}>
-                          {getStatusText(cityData[selectedCity.id].status)}
-                        </span>
-                      </div>
-                      <div className="meta-item">
-                        <Power size={16} />
-                        <span className="meta-label">Power Supply:</span>
-                        <span className="meta-value">
-                          {cityData[selectedCity.id].isOnline ? 'Online' : 'Offline'}
-                        </span>
-                      </div>
-                      <div className="meta-item">
-                        <BarChart2 size={16} />
-                        <span className="meta-label">Grid Reliability Index:</span>
-                        <span className="meta-value">{cityData[selectedCity.id].reliabilityIndex}/100</span>
-                      </div>
-                      <div className="meta-item">
-                        <Calendar size={16} />
-                        <span className="meta-label">Last Updated:</span>
-                        <span className="meta-value">{formatTimestamp(cityData[selectedCity.id].lastUpdated)}</span>
-                      </div>
-                    </div>
-                    
-                    {cityData[selectedCity.id].outages > 0 && (
-                      <div className="outage-alert">
-                        <ZapOff size={18} />
-                        <div className="outage-details">
-                          <span className="outage-title">Current Outages: </span>
-                          <span className="outage-count">{cityData[selectedCity.id].outages}</span>
-                          <span className="outage-impact">
-                            Affecting approximately {cityData[selectedCity.id].affectedCustomers.toLocaleString()} customers
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
                 
                 <div className="metrics-grid">
                   <div className="metric-card">
-                    <h4>Current Load</h4>
-                    <p className="metric-value">
-                      <span className="number-value">
-                        {selectedCity && cityData[selectedCity.id] ? 
-                          (cityData[selectedCity.id].currentLoad || 0).toLocaleString() : 
-                          powerData[selectedRegion].currentLoad.toLocaleString()}
-                      </span>
-                      <span className="unit-text">MW</span>
-                    </p>
-                    <p className={`metric-change ${selectedCity && cityData[selectedCity.id] ? 
-                      (cityData[selectedCity.id].loadTrend > 0 ? 'increasing' : 'decreasing') : 
-                      (powerData[selectedRegion].loadTrend > 0 ? 'increasing' : 'decreasing')}`}>
-                      {selectedCity && cityData[selectedCity.id] ? 
-                        (cityData[selectedCity.id].loadTrend > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />) : 
-                        (powerData[selectedRegion].loadTrend > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />)}
-                      {selectedCity && cityData[selectedCity.id] ? 
-                        Math.abs(cityData[selectedCity.id].loadTrend || 0).toFixed(2) : 
-                        Math.abs(powerData[selectedRegion].loadTrend).toFixed(2)}% from yesterday
-                    </p>
+                    <Activity size={20} />
+                    <div className="metric-title">Current Load</div>
+                    <div className="metric-value">{cityData[selectedCity.id].currentLoad} MW</div>
+                    <div className="metric-context">{Math.round((cityData[selectedCity.id].currentLoad / cityData[selectedCity.id].capacity) * 100)}% of capacity</div>
                   </div>
                   
                   <div className="metric-card">
-                    <h4>Capacity</h4>
-                    <p className="metric-value">
-                      <span className="number-value">
-                        {selectedCity && cityData[selectedCity.id] ? 
-                          (cityData[selectedCity.id].capacity || 0).toLocaleString() : 
-                          powerData[selectedRegion].capacity.toLocaleString()}
-                      </span>
-                      <span className="unit-text">MW</span>
-                    </p>
-                    <div className="capacity-bar">
-                      <div 
-                        className="capacity-fill"
-                        style={{ 
-                          width: `${selectedCity && cityData[selectedCity.id] ? 
-                            ((cityData[selectedCity.id].currentLoad || 0) / (cityData[selectedCity.id].capacity || 1) * 100) : 
-                            ((powerData[selectedRegion].currentLoad / powerData[selectedRegion].capacity) * 100)}%`,
-                          backgroundColor: selectedCity ? 
-                            getStatusColor(selectedCity.region) : 
-                            getStatusColor(selectedRegion)
-                        }}
-                      ></div>
+                    <TrendingUp size={20} />
+                    <div className="metric-title">Load Trend</div>
+                    <div className="metric-value">
+                      {cityData[selectedCity.id].loadTrend > 0 ? '+' : ''}
+                      {cityData[selectedCity.id].loadTrend}%
                     </div>
-                    <p className="capacity-percentage">
-                      {selectedCity && cityData[selectedCity.id] ? 
-                        ((cityData[selectedCity.id].currentLoad || 0) / (cityData[selectedCity.id].capacity || 1) * 100).toFixed(1) : 
-                        ((powerData[selectedRegion].currentLoad / powerData[selectedRegion].capacity) * 100).toFixed(1)}% of capacity
-                    </p>
+                  </div>
+                  
+                  <div className="metric-card">
+                    <Power size={20} />
+                    <div className="metric-title">Reliability</div>
+                    <div className="metric-value">{cityData[selectedCity.id].reliabilityIndex}%</div>
+                  </div>
+                  
+                  <div className="metric-card">
+                    <ZapOff size={20} />
+                    <div className="metric-title">Outages</div>
+                    <div className="metric-value">{cityData[selectedCity.id].outages}</div>
+                    {cityData[selectedCity.id].outages > 0 && (
+                      <div className="metric-context">{cityData[selectedCity.id].affectedCustomers.toLocaleString()} customers affected</div>
+                    )}
                   </div>
                 </div>
                 
-                {/* Forecast section */}
-                {selectedCity && cityData[selectedCity.id] && cityData[selectedCity.id].forecast && (
-                  <div className="forecast-section">
-                    <h3>24-Hour Load Forecast</h3>
-                    {renderForecastChart(cityData[selectedCity.id].forecast)}
-                    <div className="forecast-legend">
-                      <div className="forecast-legend-item">
-                        <span className="legend-color normal"></span>
-                        <span>Normal</span>
+                {/* Power forecast chart */}
+                <div className="forecast-section">
+                  <h3>
+                    <Calendar size={16} className="section-icon" />
+                    Power Demand Forecast
+                  </h3>
+                  {renderForecastChart(cityData[selectedCity.id].forecast)}
+                </div>
+                
+                {/* Issues and vulnerabilities */}
+                {cityData[selectedCity.id].vulnerabilities && cityData[selectedCity.id].vulnerabilities.length > 0 && (
+                  <div className="vulnerabilities-section">
+                    <h3>
+                      <AlertTriangle size={16} className="section-icon" />
+                      Active Issues
+                    </h3>
+                    {cityData[selectedCity.id].vulnerabilities.map((v, i) => (
+                      <div key={i} className={`vulnerability-item ${v.severity}`}>
+                        <div className="vulnerability-title">{v.title}</div>
+                        <div className="vulnerability-description">{v.description}</div>
                       </div>
-                      <div className="forecast-legend-item">
-                        <span className="legend-color warning"></span>
-                        <span>High Load</span>
-                      </div>
-                      <div className="forecast-legend-item">
-                        <span className="legend-color critical"></span>
-                        <span>Critical</span>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 )}
                 
-                <div className="vulnerabilities-section">
-                  <h3>Detected Vulnerabilities</h3>
-                  {selectedCity && cityData[selectedCity.id] && cityData[selectedCity.id].vulnerabilities ? (
-                    cityData[selectedCity.id].vulnerabilities.length > 0 ? (
-                      <ul className="vulnerability-list">
-                        {cityData[selectedCity.id].vulnerabilities.map((vulnerability, index) => (
-                          <li key={index} className={vulnerability.severity}>
-                            <span className="severity-indicator"></span>
-                            <div className="vulnerability-details">
-                              <h4>{vulnerability.title}</h4>
-                              <p>{vulnerability.description}</p>
-                              <div className="vulnerability-actions">
-                                <button className="vulnerability-action-btn">View Details</button>
-                                <button className="vulnerability-action-btn secondary">Dismiss</button>
-                              </div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="no-vulnerabilities">No vulnerabilities detected in {selectedCity.name}</p>
-                    )
-                  ) : (
-                    powerData[selectedRegion].vulnerabilities && powerData[selectedRegion].vulnerabilities.length > 0 ? (
-                      <ul className="vulnerability-list">
-                        {powerData[selectedRegion].vulnerabilities.map((vulnerability, index) => (
-                          <li key={index} className={vulnerability.severity}>
-                            <span className="severity-indicator"></span>
-                            <div className="vulnerability-details">
-                              <h4>{vulnerability.title}</h4>
-                              <p>{vulnerability.description}</p>
-                              <div className="vulnerability-actions">
-                                <button className="vulnerability-action-btn">View Details</button>
-                                <button className="vulnerability-action-btn secondary">Dismiss</button>
-                              </div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="no-vulnerabilities">No vulnerabilities detected in {selectedRegion} region</p>
-                    )
-                  )}
-                </div>
-                
-                {/* Recommendations section */}
-                {selectedCity && cityData[selectedCity.id] && cityData[selectedCity.id].recommendations && 
-                 cityData[selectedCity.id].recommendations.length > 0 && (
+                {/* Recommendations */}
+                {cityData[selectedCity.id].recommendations && cityData[selectedCity.id].recommendations.length > 0 && (
                   <div className="recommendations-section">
-                    <h3>Smart Recommendations</h3>
-                    <ul className="recommendations-list">
-                      {cityData[selectedCity.id].recommendations.map((rec, index) => (
-                        <li key={index} className={rec.priority}>
-                          <div className="recommendation-content">
-                            <h4>{rec.title}</h4>
-                            <p>{rec.description}</p>
-                            <div className="recommendation-impact">
-                              <span className="impact-label">Impact:</span>
-                              <div className="impact-rating">
-                                {[1, 2, 3, 4, 5].map(i => (
-                                  <span key={i} className={i <= rec.impact ? "filled" : ""}></span>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                          <button className="action-btn">Implement</button>
-                        </li>
-                      ))}
-                    </ul>
+                    <h3>
+                      <BarChart2 size={16} className="section-icon" />
+                      Recommended Actions
+                    </h3>
+                    {cityData[selectedCity.id].recommendations.map((r, i) => (
+                      <div key={i} className={`recommendation-item priority-${r.priority}`}>
+                        <div className="recommendation-header">
+                          <div className="recommendation-title">{r.title}</div>
+                          <div className="recommendation-priority">{r.priority}</div>
+                        </div>
+                        <div className="recommendation-description">{r.description}</div>
+                      </div>
+                    ))}
                   </div>
                 )}
-              </>
+              </div>
+            ) : (
+              selectedRegion && (
+                <div className="region-details">
+                  <div className="status-indicator">
+                    <div className={`status-badge ${powerData[selectedRegion]?.status || 'normal'}`}>
+                      {getStatusText(powerData[selectedRegion]?.status || 'normal')}
+                    </div>
+                  </div>
+                  
+                  <div className="metrics-grid">
+                    <div className="metric-card">
+                      <Activity size={20} />
+                      <div className="metric-title">Region Load</div>
+                      <div className="metric-value">
+                        {powerData[selectedRegion]?.currentLoad?.toLocaleString()} MW
+                      </div>
+                      <div className="metric-context">
+                        {Math.round((powerData[selectedRegion]?.currentLoad / powerData[selectedRegion]?.capacity) * 100)}% of capacity
+                      </div>
+                    </div>
+                    
+                    <div className="metric-card">
+                      {powerData[selectedRegion]?.loadTrend >= 0 ? (
+                        <TrendingUp size={20} />
+                      ) : (
+                        <TrendingDown size={20} />
+                      )}
+                      <div className="metric-title">Load Trend</div>
+                      <div className="metric-value">
+                        {powerData[selectedRegion]?.loadTrend > 0 ? '+' : ''}
+                        {powerData[selectedRegion]?.loadTrend}%
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="region-cities-list">
+                    <h3>Cities in {selectedRegion}</h3>
+                    <div className="city-grid">
+                      {cities.filter(city => city.region === selectedRegion).map(city => (
+                        <div 
+                          key={city.id} 
+                          className="city-item"
+                          onClick={() => selectCity(city)}
+                        >
+                          {city.name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )
             )}
           </div>
         </div>

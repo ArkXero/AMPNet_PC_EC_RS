@@ -19,154 +19,122 @@ const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 // City data cache for performance
 let cachedCityData = {};
 
-export const fetchRegionalPowerData = async () => {
-  // Check if we have cached data that's still fresh
-  const now = Date.now();
-  if (cachedData && (now - lastFetchTime) < CACHE_DURATION) {
-    return cachedData;
-  }
+/**
+ * Power Grid Monitor API Service
+ * Simulates API calls with mock data for development
+ */
 
+// Main fetch function for regional data
+export const fetchRegionalPowerData = async () => {
   try {
-    console.log("Fetching fresh data from EIA API...");
+    // Simulate API request delay
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Create promise for each region's data
-    const promises = Object.entries(REGION_MAPPING).map(async ([region, isoCode]) => {
-      try {
-        console.log(`Fetching data for ${region} (${isoCode})...`);
-        
-        const response = await axios.get(`${EIA_BASE_URL}/electricity/rto/region-data/data`, {
-          params: {
-            api_key: API_KEY,
-            frequency: 'hourly',
-            facets: { respondent: [isoCode] },
-            data: ['demand'],
-            start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // Last 7 days
-            end: new Date().toISOString(),
-            sort: [{ column: 'period', direction: 'desc' }],
-            offset: 0,
-            length: 24
+    // Create and store mock data in cache to use with fetchCityPowerData
+    cachedData = {
+      'Northeast': {
+        status: 'normal',
+        currentLoad: 45000,
+        capacity: 60000,
+        loadTrend: -2.3,
+        vulnerabilities: [],
+        prediction: generatePredictionData(null, 60000)
+      },
+      'Midwest': {
+        status: 'warning',
+        currentLoad: 52000,
+        capacity: 65000,
+        loadTrend: 3.7,
+        vulnerabilities: [
+          { 
+            title: 'Capacity Warning', 
+            description: 'Grid approaching 80% capacity in peak hours',
+            severity: 'warning'
           }
-        });
-        
-        console.log(`API response for ${region}:`, 
-          response.data && response.data.response ? 
-          `Found ${response.data.response.data?.length || 0} records` : 
-          'Unexpected response structure');
-        
-        if (response.data?.response?.data?.length > 0) {
-          const data = response.data.response.data;
-          const latestData = data[0];
-          
-          if (latestData && typeof latestData.demand === 'number') {
-            // Create consistent region data from API
-            const regionData = {
-              currentLoad: Math.round(latestData.demand),
-              capacity: Math.round((latestData['net-generation'] || latestData.demand * 1.2) * 1.2),
-              status: determineStatus(latestData),
-              loadTrend: calculateTrend(data),
-              stabilityScore: 85 - Math.floor(Math.random() * 20),
-              failures: Math.floor(Math.random() * 3),
-              vulnerabilities: generateVulnerabilities(data),
-              _source: 'EIA_API' // Mark this as coming from the API
-            };
-            
-            // Generate prediction data based on historical pattern
-            regionData.prediction = generatePredictionData(data, regionData.capacity);
-            
-            return [region, regionData];
+        ],
+        prediction: generatePredictionData(null, 65000)
+      },
+      'South': {
+        status: 'normal',
+        currentLoad: 67000,
+        capacity: 95000,
+        loadTrend: 1.2,
+        vulnerabilities: [],
+        prediction: generatePredictionData(null, 95000)
+      },
+      'West': {
+        status: 'critical',
+        currentLoad: 72000,
+        capacity: 78000,
+        loadTrend: 5.4,
+        vulnerabilities: [
+          {
+            title: 'Critical Overload Risk',
+            description: 'Grid at 92% capacity, implement load shedding protocols',
+            severity: 'critical'
           }
-        }
-        
-        throw new Error(`Invalid or missing data for ${region}`);
-      } catch (error) {
-        console.error(`Error fetching data for ${region}:`, error.message);
-        return [region, getFallbackData(region)];
+        ],
+        prediction: generatePredictionData(null, 78000)
       }
-    });
+    };
     
-    const results = await Promise.all(promises);
-    const formattedData = Object.fromEntries(results);
+    // Update last fetch time
+    lastFetchTime = Date.now();
     
-    // Cache the data
-    cachedData = formattedData;
-    lastFetchTime = now;
-    
-    // When regional data changes, invalidate any city data caches
-    cachedCityData = {};
-    
-    console.log("Data sources:", results.map(([region, data]) => `${region}: ${data._source || 'API'}`));
-    
-    return formattedData;
+    return cachedData;
   } catch (error) {
     console.error('Error in fetchRegionalPowerData:', error);
-    
-    // If we have cached data, return it even if expired
-    if (cachedData) {
-      console.log("Returning expired cached data");
-      return cachedData;
-    }
-    
-    // As a last resort, return fallback data
     return getFallbackDataForAllRegions();
   }
 };
 
-// Generate consistent prediction data based on historical patterns
-function generatePredictionData(data, capacity) {
-  const predictions = [];
-  const now = new Date();
-  
-  for (let i = 0; i < 24; i++) {
-    const hour = (now.getHours() + i) % 24;
-    let baseLoad;
+// Mock city data fetch - simplified for development
+export const fetchCityPowerDataMock = async (cityId) => {
+  try {
+    // Simulate API request delay
+    await new Promise(resolve => setTimeout(resolve, 800));
     
-    // Use real data pattern if available
-    if (data.length > 12) {
-      const historicalIndex = data.findIndex(d => {
-        const dataDate = new Date(d.period);
-        return dataDate.getHours() === hour;
-      });
-      
-      baseLoad = historicalIndex >= 0 ? data[historicalIndex].demand : null;
-    }
-    
-    // If we couldn't find historical data for this hour, create realistic pattern
-    if (!baseLoad) {
-      // Morning ramp up
-      if (hour >= 5 && hour <= 9) {
-        baseLoad = capacity * (0.5 + (hour - 5) * 0.07);
-      }
-      // Midday plateau
-      else if (hour >= 10 && hour <= 17) {
-        baseLoad = capacity * 0.75;
-      }
-      // Evening peak
-      else if (hour >= 18 && hour <= 21) {
-        baseLoad = capacity * (0.8 - (hour - 18) * 0.03);
-      }
-      // Night trough
-      else {
-        baseLoad = capacity * 0.45;
-      }
-      
-      // Add some noise
-      baseLoad = baseLoad * (0.95 + Math.random() * 0.1);
-    }
-    
-    const time = new Date(now);
-    time.setHours(hour, 0, 0, 0);
-    
-    predictions.push({
-      time: `${hour.toString().padStart(2, '0')}:00`,
-      load: Math.round(baseLoad)
-    });
+    // Return mock data for the selected city
+    return {
+      id: cityId,
+      status: ['normal', 'warning', 'critical'][Math.floor(Math.random() * 3)],
+      isOnline: true,
+      currentLoad: Math.floor(Math.random() * 5000) + 3000,
+      capacity: 10000,
+      loadTrend: (Math.random() * 10) - 5,
+      reliabilityIndex: Math.floor(Math.random() * 30) + 70,
+      outages: Math.random() > 0.7 ? Math.floor(Math.random() * 5) + 1 : 0,
+      affectedCustomers: Math.floor(Math.random() * 10000),
+      lastUpdated: new Date().toISOString(),
+      forecast: Array.from({length: 24}, (_, i) => ({
+        time: `${i.toString().padStart(2, '0')}:00`,
+        value: Math.floor(Math.random() * 8000) + 2000
+      })),
+      vulnerabilities: Math.random() > 0.5 ? [{
+        title: 'Example Vulnerability',
+        description: 'This is a mock vulnerability for testing',
+        severity: ['warning', 'critical'][Math.floor(Math.random() * 2)]
+      }] : [],
+      recommendations: Math.random() > 0.5 ? [{
+        title: 'Example Recommendation',
+        description: 'This is a mock recommendation for testing',
+        priority: ['high', 'medium', 'low'][Math.floor(Math.random() * 3)],
+        impact: Math.floor(Math.random() * 5) + 1
+      }] : []
+    };
+  } catch (error) {
+    console.error('Error generating mock city data:', error);
+    return generateFallbackCityData(cityId);
   }
-  
-  return predictions;
-}
+};
 
 export const fetchHistoricalData = async (region, timeframe) => {
   try {
+    // For development, use fallback data instead of actual API calls
+    return generateFallbackHistoricalData(timeframe);
+    
+    /*
+    // Real API code - commented out for development
     const isoCode = REGION_MAPPING[region];
     const endDate = new Date();
     const startDate = new Date(endDate);
@@ -200,11 +168,63 @@ export const fetchHistoricalData = async (region, timeframe) => {
     } else {
       throw new Error("No historical data available");
     }
+    */
   } catch (error) {
     console.error('Error fetching historical data:', error);
     return generateFallbackHistoricalData(timeframe);
   }
 };
+
+// Generate consistent prediction data based on historical patterns
+function generatePredictionData(data, capacity) {
+  const predictions = [];
+  const now = new Date();
+  
+  for (let i = 0; i < 24; i++) {
+    const hour = (now.getHours() + i) % 24;
+    let baseLoad;
+    
+    // Use real data pattern if available
+    if (data && data.length > 12) {
+      const historicalIndex = data.findIndex(d => {
+        const dataDate = new Date(d.period);
+        return dataDate.getHours() === hour;
+      });
+      
+      baseLoad = historicalIndex >= 0 ? data[historicalIndex].demand : null;
+    }
+    
+    // If we couldn't find historical data for this hour, create realistic pattern
+    if (!baseLoad) {
+      // Morning ramp up
+      if (hour >= 5 && hour <= 9) {
+        baseLoad = capacity * (0.5 + (hour - 5) * 0.07);
+      }
+      // Midday plateau
+      else if (hour >= 10 && hour <= 17) {
+        baseLoad = capacity * 0.75;
+      }
+      // Evening peak
+      else if (hour >= 18 && hour <= 21) {
+        baseLoad = capacity * (0.8 - (hour - 18) * 0.03);
+      }
+      // Night trough
+      else {
+        baseLoad = capacity * 0.45;
+      }
+      
+      // Add some noise
+      baseLoad = baseLoad * (0.95 + Math.random() * 0.1);
+    }
+    
+    predictions.push({
+      time: `${hour.toString().padStart(2, '0')}:00`,
+      load: Math.round(baseLoad)
+    });
+  }
+  
+  return predictions;
+}
 
 function determineStatus(data) {
   if (!data || typeof data.demand !== 'number') return 'normal';
@@ -413,10 +433,6 @@ function generateFallbackHistoricalData(timeframe) {
 }
 
 /**
- * NEW FUNCTIONS TO SUPPORT CITY-SPECIFIC DATA
- */
-
-/**
  * Fetch city-specific power grid data
  * @param {string} cityId - The city identifier
  */
@@ -426,6 +442,9 @@ export const fetchCityPowerData = async (cityId) => {
     if (cachedCityData[cityId] && (Date.now() - cachedCityData[cityId].timestamp) < CACHE_DURATION) {
       return cachedCityData[cityId].data;
     }
+    
+    // For faster development, use the mock data option
+    // return fetchCityPowerDataMock(cityId);
     
     // First check if we already have regional data cached
     if (!cachedData || (Date.now() - lastFetchTime) >= CACHE_DURATION) {
@@ -465,6 +484,11 @@ export const fetchCityPowerData = async (cityId) => {
     };
     
     const region = cityRegionMap[cityId] || "Northeast"; // Default to Northeast if unknown
+    
+    if (!cachedData) {
+      throw new Error("Regional data not available");
+    }
+    
     const regionData = cachedData[region];
     
     if (!regionData) {
@@ -492,98 +516,103 @@ export const fetchCityPowerData = async (cityId) => {
  * Process regional data into city-specific data
  */
 function processCityData(regionData, cityId, region) {
-  // Create a unique but consistent modifier for this city
-  const cityHash = cityId.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  const cityModifier = 0.7 + ((cityHash % 60) / 100); // 0.7 to 1.3 range
-  
-  // Base city data on regional data, but with city-specific adjustments
-  const cityLoad = Math.round(regionData.currentLoad * cityModifier / 10); // Cities are ~1/10th of region
-  const cityCapacity = Math.round(cityLoad * 1.2 + (cityHash % 500)); // Add some variance
-  
-  // Calculate load percentage for status determination
-  const loadPercentage = (cityLoad / cityCapacity) * 100;
-  let cityStatus = 'normal';
-  if (loadPercentage > 85) cityStatus = 'critical';
-  else if (loadPercentage > 70) cityStatus = 'warning';
-  else if (regionData.status === 'critical') cityStatus = 'warning'; // Regional effect
-  
-  // Calculate reliability index (higher is better)
-  const reliabilityBase = cityHash % 15; // 0-14 range
-  const reliabilityIndex = Math.min(98, Math.max(65, 85 - reliabilityBase + (regionData.status === 'normal' ? 5 : 0)));
-  
-  // Determine if there are outages
-  const hasOutages = cityStatus === 'critical' || 
-                    (cityStatus === 'warning' && Math.random() > 0.7) ||
-                    reliabilityIndex < 75;
-  
-  const outageCount = hasOutages ? Math.floor(Math.random() * 3) + 1 : 0;
-  const affectedCustomers = outageCount > 0 ? outageCount * (1000 + (cityHash % 2000)) : 0;
-  
-  // Calculate city vulnerabilities
-  const vulnerabilities = [];
-  if (regionData.vulnerabilities && regionData.vulnerabilities.length > 0) {
-    // Copy relevant regional vulnerabilities
-    regionData.vulnerabilities.forEach(v => {
-      if (v.severity === 'critical' || (v.severity === 'warning' && Math.random() > 0.5)) {
-        vulnerabilities.push({
-          ...v,
-          description: v.description.replace(region, `${getCityName(cityId)} area`)
-        });
-      }
-    });
+  try {
+    // Create a unique but consistent modifier for this city
+    const cityHash = cityId.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const cityModifier = 0.7 + ((cityHash % 60) / 100); // 0.7 to 1.3 range
+    
+    // Base city data on regional data, but with city-specific adjustments
+    const cityLoad = Math.round(regionData.currentLoad * cityModifier / 10); // Cities are ~1/10th of region
+    const cityCapacity = Math.round(cityLoad * 1.2 + (cityHash % 500)); // Add some variance
+    
+    // Calculate load percentage for status determination
+    const loadPercentage = (cityLoad / cityCapacity) * 100;
+    let cityStatus = 'normal';
+    if (loadPercentage > 85) cityStatus = 'critical';
+    else if (loadPercentage > 70) cityStatus = 'warning';
+    else if (regionData.status === 'critical') cityStatus = 'warning'; // Regional effect
+    
+    // Calculate reliability index (higher is better)
+    const reliabilityBase = cityHash % 15; // 0-14 range
+    const reliabilityIndex = Math.min(98, Math.max(65, 85 - reliabilityBase + (regionData.status === 'normal' ? 5 : 0)));
+    
+    // Determine if there are outages
+    const hasOutages = cityStatus === 'critical' || 
+                      (cityStatus === 'warning' && Math.random() > 0.7) ||
+                      reliabilityIndex < 75;
+    
+    const outageCount = hasOutages ? Math.floor(Math.random() * 3) + 1 : 0;
+    const affectedCustomers = outageCount > 0 ? outageCount * (1000 + (cityHash % 2000)) : 0;
+    
+    // Calculate city vulnerabilities
+    const vulnerabilities = [];
+    if (regionData.vulnerabilities && regionData.vulnerabilities.length > 0) {
+      // Copy relevant regional vulnerabilities
+      regionData.vulnerabilities.forEach(v => {
+        if (v.severity === 'critical' || (v.severity === 'warning' && Math.random() > 0.5)) {
+          vulnerabilities.push({
+            ...v,
+            description: v.description.replace(region, `${getCityName(cityId)} area`)
+          });
+        }
+      });
+    }
+    
+    // Add city-specific vulnerabilities
+    if (loadPercentage > 80) {
+      vulnerabilities.push({
+        title: 'High Demand Alert',
+        description: `Current power demand in ${getCityName(cityId)} is approaching capacity limits.`,
+        severity: 'critical'
+      });
+    }
+    
+    if (reliabilityIndex < 75) {
+      vulnerabilities.push({
+        title: 'Grid Stability Risk',
+        description: `The ${getCityName(cityId)} distribution network shows signs of instability.`,
+        severity: 'warning'
+      });
+    }
+    
+    if (outageCount > 0) {
+      vulnerabilities.push({
+        title: 'Active Outages',
+        description: `${outageCount} outage(s) affecting ${affectedCustomers.toLocaleString()} customers in ${getCityName(cityId)}.`,
+        severity: 'critical'
+      });
+    }
+    
+    // Generate smart recommendations
+    const recommendations = generateRecommendations(cityStatus, outageCount, reliabilityIndex, cityId);
+    
+    // Generate forecast based on regional prediction but adjusted for the city
+    const forecast = regionData.prediction ? 
+      regionData.prediction.map(hour => ({
+        time: hour.time,
+        value: Math.round(hour.load * cityModifier / 10 * (0.95 + Math.random() * 0.1))
+      })) : 
+      generateCityForecastData(cityLoad);
+    
+    return {
+      status: cityStatus,
+      currentLoad: cityLoad,
+      capacity: cityCapacity,
+      loadTrend: regionData.loadTrend + ((cityHash % 10) - 5), // +/- 5% from region trend
+      reliabilityIndex,
+      isOnline: true,
+      outages: outageCount,
+      affectedCustomers,
+      lastUpdated: new Date().toISOString(),
+      vulnerabilities,
+      recommendations,
+      forecast
+    };
+  } catch (error) {
+    console.error(`Error in processCityData for ${cityId}:`, error);
+    return generateFallbackCityData(cityId);
   }
-  
-  // Add city-specific vulnerabilities
-  if (loadPercentage > 80) {
-    vulnerabilities.push({
-      title: 'High Demand Alert',
-      description: `Current power demand in ${getCityName(cityId)} is approaching capacity limits.`,
-      severity: 'critical'
-    });
-  }
-  
-  if (reliabilityIndex < 75) {
-    vulnerabilities.push({
-      title: 'Grid Stability Risk',
-      description: `The ${getCityName(cityId)} distribution network shows signs of instability.`,
-      severity: 'warning'
-    });
-  }
-  
-  if (outageCount > 0) {
-    vulnerabilities.push({
-      title: 'Active Outages',
-      description: `${outageCount} outage(s) affecting ${affectedCustomers.toLocaleString()} customers in ${getCityName(cityId)}.`,
-      severity: 'critical'
-    });
-  }
-  
-  // Generate smart recommendations
-  const recommendations = generateRecommendations(cityStatus, outageCount, reliabilityIndex, cityId);
-  
-  // Generate forecast based on regional prediction but adjusted for the city
-  const forecast = regionData.prediction ? 
-    regionData.prediction.map(hour => ({
-      time: hour.time,
-      value: Math.round(hour.load * cityModifier / 10 * (0.95 + Math.random() * 0.1))
-    })) : 
-    generateCityForecastData(cityLoad);
-  
-  return {
-    status: cityStatus,
-    currentLoad: cityLoad,
-    capacity: cityCapacity,
-    loadTrend: regionData.loadTrend + ((cityHash % 10) - 5), // +/- 5% from region trend
-    reliabilityIndex,
-    isOnline: true,
-    outages: outageCount,
-    affectedCustomers,
-    lastUpdated: new Date().toISOString(),
-    vulnerabilities,
-    recommendations,
-    forecast
-  };
-}
+};
 
 /**
  * Generate recommendations based on city conditions
@@ -698,111 +727,101 @@ function generateCityForecastData(baseLoad) {
  * Generate fallback data for a city when API fails
  */
 function generateFallbackCityData(cityId) {
-  // Get a consistent seed value for this city
-  const cityHash = cityId.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  
-  // Generate base load between 300-1500 MW
-  const baseLoad = 300 + (cityHash % 1200);
-  const capacity = Math.round(baseLoad * (1.2 + (cityHash % 40) / 100)); // 20-60% headroom
-  
-  // Calculate load percentage
-  const loadPercentage = (baseLoad / capacity) * 100;
-  let status = 'normal';
-  if (loadPercentage > 85) status = 'critical';
-  else if (loadPercentage > 70) status = 'warning';
-  
-  // Calculate reliability index (higher is better)
-  const reliabilityIndex = Math.min(98, Math.max(65, 85 - (cityHash % 20)));
-  
-  // Determine if there are outages
-  const hasOutages = status === 'critical' || 
-                     (status === 'warning' && Math.random() > 0.7) ||
-                     reliabilityIndex < 75;
-  
-  const outageCount = hasOutages ? Math.floor(Math.random() * 3) + 1 : 0;
-  const affectedCustomers = outageCount > 0 ? outageCount * (1000 + (cityHash % 2000)) : 0;
-  
-  // Generate vulnerabilities
-  const vulnerabilities = [];
-  if (status === 'critical') {
-    vulnerabilities.push({
-      title: 'Peak Demand Alert',
-      description: `Current power demand in ${getCityName(cityId)} is approaching capacity limits.`,
-      severity: 'critical'
-    });
+  try {
+    // Get a consistent seed value for this city
+    const cityHash = cityId.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    
+    // Generate base load between 300-1500 MW
+    const baseLoad = 300 + (cityHash % 1200);
+    const capacity = Math.round(baseLoad * (1.2 + (cityHash % 40) / 100)); // 20-60% headroom
+    
+    // Calculate load percentage
+    const loadPercentage = (baseLoad / capacity) * 100;
+    let status = 'normal';
+    if (loadPercentage > 85) status = 'critical';
+    else if (loadPercentage > 70) status = 'warning';
+    
+    // Calculate reliability index (higher is better)
+    const reliabilityIndex = Math.min(98, Math.max(65, 85 - (cityHash % 20)));
+    
+    // Determine if there are outages
+    const hasOutages = status === 'critical' || 
+                      (status === 'warning' && Math.random() > 0.7) ||
+                      reliabilityIndex < 75;
+    
+    const outageCount = hasOutages ? Math.floor(Math.random() * 3) + 1 : 0;
+    const affectedCustomers = outageCount > 0 ? outageCount * (1000 + (cityHash % 2000)) : 0;
+    
+    // Generate vulnerabilities
+    const vulnerabilities = [];
+    if (status === 'critical') {
+      vulnerabilities.push({
+        title: 'Peak Demand Alert',
+        description: `Current power demand in ${getCityName(cityId)} is approaching capacity limits.`,
+        severity: 'critical'
+      });
+    }
+    
+    if (reliabilityIndex < 75) {
+      vulnerabilities.push({
+        title: 'Grid Reliability Issue',
+        description: `System reliability in ${getCityName(cityId)} is below acceptable thresholds.`,
+        severity: 'warning'
+      });
+    }
+    
+    if (outageCount > 0) {
+      vulnerabilities.push({
+        title: 'Active Outages',
+        description: `${outageCount} outage(s) affecting ${affectedCustomers.toLocaleString()} customers in ${getCityName(cityId)}.`,
+        severity: 'critical'
+      });
+    }
+    
+    // Generate recommendations
+    const recommendations = generateRecommendations(status, outageCount, reliabilityIndex, cityId);
+    
+    // Generate forecast
+    const forecast = generateCityForecastData(baseLoad);
+    
+    return {
+      status,
+      currentLoad: baseLoad,
+      capacity,
+      loadTrend: Math.round((Math.random() * 10) - 5), // -5 to +5%
+      reliabilityIndex,
+      isOnline: true,
+      outages: outageCount,
+      affectedCustomers,
+      lastUpdated: new Date().toISOString(),
+      vulnerabilities,
+      recommendations,
+      forecast
+    };
+  } catch (error) {
+    console.error(`Error in generateFallbackCityData:`, error);
+    // Return absolute minimum data structure that won't crash the UI
+    return {
+      status: 'normal',
+      currentLoad: 1000,
+      capacity: 2000,
+      loadTrend: 0,
+      reliabilityIndex: 80,
+      isOnline: true,
+      outages: 0,
+      affectedCustomers: 0,
+      lastUpdated: new Date().toISOString(),
+      vulnerabilities: [],
+      recommendations: [{
+        title: 'Maintenance',
+        description: 'Regular system maintenance',
+        priority: 'low',
+        impact: 1
+      }],
+      forecast: Array(24).fill(0).map((_, i) => ({
+        time: `${i.toString().padStart(2, '0')}:00`,
+        value: 500 + Math.floor(Math.random() * 500)
+      }))
+    };
   }
-  
-  if (reliabilityIndex < 75) {
-    vulnerabilities.push({
-      title: 'Grid Reliability Issue',
-      description: `System reliability in ${getCityName(cityId)} is below acceptable thresholds.`,
-      severity: 'warning'
-    });
-  }
-  
-  if (outageCount > 0) {
-    vulnerabilities.push({
-      title: 'Active Outages',
-      description: `${outageCount} outage(s) affecting ${affectedCustomers.toLocaleString()} customers in ${getCityName(cityId)}.`,
-      severity: 'critical'
-    });
-  }
-  
-  // Generate recommendations
-  const recommendations = generateRecommendations(status, outageCount, reliabilityIndex, cityId);
-  
-  // Generate forecast
-  const forecast = generateCityForecastData(baseLoad);
-  
-  return {
-    status,
-    currentLoad: baseLoad,
-    capacity,
-    loadTrend: Math.round((Math.random() * 10) - 5), // -5 to +5%
-    reliabilityIndex,
-    isOnline: true,
-    outages: outageCount,
-    affectedCustomers,
-    lastUpdated: new Date().toISOString(),
-    vulnerabilities,
-    recommendations,
-    forecast
-  };
 }
-
-/**
- * Get formal city name from ID
- */
-function getCityName(cityId) {
-  const cityNames = {
-    "nyc": "New York City",
-    "bos": "Boston",
-    "phl": "Philadelphia", 
-    "pit": "Pittsburgh",
-    "chi": "Chicago",
-    "det": "Detroit",
-    "msp": "Minneapolis",
-    "stl": "St. Louis",
-    "cin": "Cincinnati",
-    "atl": "Atlanta",
-    "mia": "Miami",
-    "hou": "Houston",
-    "dal": "Dallas",
-    "sat": "San Antonio",
-    "lax": "Los Angeles",
-    "sfo": "San Francisco",
-    "sea": "Seattle",
-    "phx": "Phoenix",
-    "den": "Denver",
-    "san": "San Diego"
-  };
-  
-  return cityNames[cityId] || cityId;
-}
-
-// Export all functions that should be available to other modules
-export default {
-  fetchRegionalPowerData,
-  fetchHistoricalData,
-  fetchCityPowerData
-};

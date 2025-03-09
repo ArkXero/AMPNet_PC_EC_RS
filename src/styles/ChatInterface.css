@@ -1,0 +1,589 @@
+.chat-container {
+  display: flex;
+  height: calc(100vh - 70px);
+  background-color: var(--background-color);
+  position: relative;
+}
+
+.knowledge-sidebar {
+  width: 350px;
+  background-color: white;
+  border-left: 1px solid var(--border-color);
+  height: 100%;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+}
+
+.knowledge-sidebar.open {
+  transform: translateX(0);
+}
+
+.knowledge-sidebar h2 {
+  padding: 1.5rem;
+  margin: 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 1.25rem;
+}
+
+.knowledge-topic {
+  margin: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.topic-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.topic-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: rgba(59, 130, 246, 0.1);
+  border-radius: 50%;
+  color: var(--primary-color);
+}
+
+.topic-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.topic-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.topic-items li {
+  padding: 0.75rem 1rem;
+  background-color: var(--background-color);
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.topic-items li:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--primary-color);
+}
+
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.chat-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-toggle:hover {
+  background-color: var(--background-color);
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.message {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  animation: fade-in 0.3s ease-in-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: var(--background-color);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.message.user .message-icon {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.message.ai .message-icon {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--primary-color);
+}
+
+.message.system .message-icon {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--healthy-color);
+}
+
+.message-content {
+  flex: 1;
+  background-color: white;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  line-height: 1.6;
+}
+
+.message.user .message-content {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.message.loading {
+  margin-bottom: 0;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.loading-indicator .spin {
+  animation: spin 1s linear infinite;
+}
+
+.suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.suggestion-chip {
+  padding: 0.625rem 1rem;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.suggestion-chip:hover {
+  background-color: var(--background-color);
+  border-color: var(--primary-color);
+}
+
+.chat-input-container {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.chat-input-container input {
+  width: 100%;
+  padding: 1rem 3.5rem 1rem 1.5rem;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.chat-input-container input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.chat-input-container button {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.chat-input-container button:hover {
+  background-color: var(--primary-hover);
+}
+
+.chat-input-container button:disabled {
+  background-color: var(--text-light);
+  cursor: not-allowed;
+}
+
+/* Data visualization styles for AI responses */
+.related-data {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background-color: var(--background-color);
+  border-radius: 0.5rem;
+}
+
+.related-data h3 {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  font-size: 1.125rem;
+}
+
+/* Vulnerability assessment styling */
+.vulnerability-chart {
+  margin-bottom: 1.5rem;
+}
+
+.vulnerability-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background-color: white;
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.vulnerability-bar.critical {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--critical-color);
+}
+
+.vulnerability-bar.high {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--warning-color);
+}
+
+.data-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.data-action {
+  padding: 0.625rem 1rem;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Prediction chart styling */
+.prediction-chart {
+  height: 200px;
+  margin-bottom: 1.5rem;
+}
+
+.chart-container {
+  height: 100%;
+  position: relative;
+  display: flex;
+}
+
+.chart-bar-container {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  position: relative;
+}
+
+.chart-bar {
+  width: 80%;
+  border-radius: 2px 2px 0 0;
+}
+
+.time-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+  transform: rotate(-45deg);
+  transform-origin: top left;
+  white-space: nowrap;
+}
+
+.prediction-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-weight: 600;
+}
+
+.stat-value.warning {
+  color: var(--warning-color);
+}
+
+/* Alert styling */
+.alert-details {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.alert-map {
+  flex: 1;
+  height: 150px;
+  background-color: white;
+  border-radius: 0.5rem;
+  position: relative;
+}
+
+.map-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 0.5rem;
+  position: relative;
+}
+
+.alert-point {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  background-color: var(--critical-color);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.alert-point.pulse {
+  animation: pulse-animation 2s infinite;
+}
+
+@keyframes pulse-animation {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.impact-radius {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.alert-stats {
+  flex: 1;
+}
+
+.alert-stats .stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  text-align: left;
+}
+
+/* Recommendations styling */
+.recommendations {
+  margin-top: 1.5rem;
+}
+
+.recommendations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recommendation-item {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.recommendation-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.recommendation-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: rgba(59, 130, 246, 0.1);
+  border-radius: 50%;
+  color: var(--primary-color);
+}
+
+.recommendation-header h4 {
+  margin: 0;
+  flex: 1;
+  font-size: 0.9375rem;
+}
+
+.impact-gauge {
+  width: 60px;
+  height: 8px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-right: 0.5rem;
+}
+
+.impact-value {
+  height: 100%;
+  background-color: var(--primary-color);
+  border-radius: 4px;
+}
+
+.impact-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.view-details-btn {
+  padding: 0.5rem 0.75rem;
+  background-color: var(--background-color);
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+  .knowledge-sidebar {
+    position: fixed;
+    top: 70px;
+    right: 0;
+    bottom: 0;
+    z-index: 900;
+  }
+}
+
+@media (max-width: 768px) {
+  .chat-main {
+    padding: 1rem;
+  }
+  
+  .message {
+    gap: 0.75rem;
+  }
+  
+  .message-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .message-content {
+    padding: 1rem;
+  }
+  
+  .related-data {
+    padding: 1rem;
+  }
+  
+  .prediction-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .alert-details {
+    flex-direction: column;
+  }
+  
+  .data-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 576px) {
+  .suggestion-chips {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .suggestion-chip {
+    max-width: none;
+  }
+  
+  .knowledge-sidebar {
+    width: 100%;
+  }
+}

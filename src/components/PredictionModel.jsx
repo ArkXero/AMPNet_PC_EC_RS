@@ -133,7 +133,7 @@ const PredictionModel = () => {
   const [loading, setLoading] = useState(true);
   const [selectedRegion, setSelectedRegion] = useState('Northeast');
   const [timeframe, setTimeframe] = useState('24h');
-  const [modelType, setModelType] = useState('Load Forecast');
+  const [modelType, setModelType] = useState('load');
   const [modelAccuracy, setModelAccuracy] = useState(93.5);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [isRunningModel, setIsRunningModel] = useState(false);

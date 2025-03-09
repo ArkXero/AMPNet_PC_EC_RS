@@ -383,7 +383,7 @@ const PowerGridMap = () => {
   const renderCities = () => {
     return cities.map(city => {
       const nodeSize = getNodeSize(city);
-      const isSelected = selectedCity && selectedCity.name === city.name;
+      const isSelected = selectedCity && city.name === selectedCity.name;
       const isInSelectedRegion = selectedRegion === city.region;
       
       return (
@@ -633,11 +633,11 @@ const PowerGridMap = () => {
             {!loading && (
               <>
                 <div className="status-indicator">
-                  <div className={`status-badge ${selectedCity ? 
-                    (cityData[selectedCity.id]?.status || 'normal') : 
+                  <div className={`status-badge ${selectedCity && cityData[selectedCity.id] ? 
+                    (cityData[selectedCity.id].status || 'normal') : 
                     powerData[selectedRegion].status}`}>
-                    {selectedCity ? 
-                      getStatusText(cityData[selectedCity.id]?.status || 'normal') : 
+                    {selectedCity && cityData[selectedCity.id] ? 
+                      getStatusText(cityData[selectedCity.id].status || 'normal') : 
                       getStatusText(powerData[selectedRegion].status)}
                   </div>
                 </div>
@@ -691,20 +691,20 @@ const PowerGridMap = () => {
                     <h4>Current Load</h4>
                     <p className="metric-value">
                       <span className="number-value">
-                        {selectedCity ? 
-                          (cityData[selectedCity.id]?.currentLoad || 0).toLocaleString() : 
+                        {selectedCity && cityData[selectedCity.id] ? 
+                          (cityData[selectedCity.id].currentLoad || 0).toLocaleString() : 
                           powerData[selectedRegion].currentLoad.toLocaleString()}
                       </span>
                       <span className="unit-text">MW</span>
                     </p>
-                    <p className={`metric-change ${selectedCity ? 
-                      (cityData[selectedCity.id]?.loadTrend > 0 ? 'increasing' : 'decreasing') : 
+                    <p className={`metric-change ${selectedCity && cityData[selectedCity.id] ? 
+                      (cityData[selectedCity.id].loadTrend > 0 ? 'increasing' : 'decreasing') : 
                       (powerData[selectedRegion].loadTrend > 0 ? 'increasing' : 'decreasing')}`}>
-                      {selectedCity ? 
-                        (cityData[selectedCity.id]?.loadTrend > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />) : 
+                      {selectedCity && cityData[selectedCity.id] ? 
+                        (cityData[selectedCity.id].loadTrend > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />) : 
                         (powerData[selectedRegion].loadTrend > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />)}
-                      {selectedCity ? 
-                        Math.abs(cityData[selectedCity.id]?.loadTrend || 0).toFixed(2) : 
+                      {selectedCity && cityData[selectedCity.id] ? 
+                        Math.abs(cityData[selectedCity.id].loadTrend || 0).toFixed(2) : 
                         Math.abs(powerData[selectedRegion].loadTrend).toFixed(2)}% from yesterday
                     </p>
                   </div>
@@ -713,8 +713,8 @@ const PowerGridMap = () => {
                     <h4>Capacity</h4>
                     <p className="metric-value">
                       <span className="number-value">
-                        {selectedCity ? 
-                          (cityData[selectedCity.id]?.capacity || 0).toLocaleString() : 
+                        {selectedCity && cityData[selectedCity.id] ? 
+                          (cityData[selectedCity.id].capacity || 0).toLocaleString() : 
                           powerData[selectedRegion].capacity.toLocaleString()}
                       </span>
                       <span className="unit-text">MW</span>
@@ -723,8 +723,8 @@ const PowerGridMap = () => {
                       <div 
                         className="capacity-fill"
                         style={{ 
-                          width: `${selectedCity ? 
-                            ((cityData[selectedCity.id]?.currentLoad || 0) / (cityData[selectedCity.id]?.capacity || 1) * 100) : 
+                          width: `${selectedCity && cityData[selectedCity.id] ? 
+                            ((cityData[selectedCity.id].currentLoad || 0) / (cityData[selectedCity.id].capacity || 1) * 100) : 
                             ((powerData[selectedRegion].currentLoad / powerData[selectedRegion].capacity) * 100)}%`,
                           backgroundColor: selectedCity ? 
                             getStatusColor(selectedCity.region) : 
@@ -733,15 +733,15 @@ const PowerGridMap = () => {
                       ></div>
                     </div>
                     <p className="capacity-percentage">
-                      {selectedCity ? 
-                        ((cityData[selectedCity.id]?.currentLoad || 0) / (cityData[selectedCity.id]?.capacity || 1) * 100).toFixed(1) : 
+                      {selectedCity && cityData[selectedCity.id] ? 
+                        ((cityData[selectedCity.id].currentLoad || 0) / (cityData[selectedCity.id].capacity || 1) * 100).toFixed(1) : 
                         ((powerData[selectedRegion].currentLoad / powerData[selectedRegion].capacity) * 100).toFixed(1)}% of capacity
                     </p>
                   </div>
                 </div>
                 
                 {/* Forecast section */}
-                {selectedCity && cityData[selectedCity.id]?.forecast && (
+                {selectedCity && cityData[selectedCity.id] && cityData[selectedCity.id].forecast && (
                   <div className="forecast-section">
                     <h3>24-Hour Load Forecast</h3>
                     {renderForecastChart(cityData[selectedCity.id].forecast)}
@@ -764,7 +764,7 @@ const PowerGridMap = () => {
                 
                 <div className="vulnerabilities-section">
                   <h3>Detected Vulnerabilities</h3>
-                  {selectedCity && cityData[selectedCity.id]?.vulnerabilities ? (
+                  {selectedCity && cityData[selectedCity.id] && cityData[selectedCity.id].vulnerabilities ? (
                     cityData[selectedCity.id].vulnerabilities.length > 0 ? (
                       <ul className="vulnerability-list">
                         {cityData[selectedCity.id].vulnerabilities.map((vulnerability, index) => (
@@ -785,7 +785,7 @@ const PowerGridMap = () => {
                       <p className="no-vulnerabilities">No vulnerabilities detected in {selectedCity.name}</p>
                     )
                   ) : (
-                    powerData[selectedRegion].vulnerabilities?.length > 0 ? (
+                    powerData[selectedRegion].vulnerabilities && powerData[selectedRegion].vulnerabilities.length > 0 ? (
                       <ul className="vulnerability-list">
                         {powerData[selectedRegion].vulnerabilities.map((vulnerability, index) => (
                           <li key={index} className={vulnerability.severity}>
@@ -808,7 +808,8 @@ const PowerGridMap = () => {
                 </div>
                 
                 {/* Recommendations section */}
-                {selectedCity && cityData[selectedCity.id]?.recommendations && cityData[selectedCity.id].recommendations.length > 0 && (
+                {selectedCity && cityData[selectedCity.id] && cityData[selectedCity.id].recommendations && 
+                 cityData[selectedCity.id].recommendations.length > 0 && (
                   <div className="recommendations-section">
                     <h3>Smart Recommendations</h3>
                     <ul className="recommendations-list">
@@ -834,612 +835,6 @@ const PowerGridMap = () => {
                 )}
               </>
             )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default PowerGridMap;
-                            import React, { useEffect, useState, useRef } from 'react';
-import { fetchRegionalPowerData } from '../services/api';
-import '../styles/PowerGridMap.css';
-import usaMapImage from '../assets/usa-map.jpg';
-import { Search } from 'lucide-react';
-
-const PowerGridMap = () => {
-  const [powerData, setPowerData] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [hoveredRegion, setHoveredRegion] = useState(null);
-  const [selectedRegion, setSelectedRegion] = useState(null);
-  const [selectedCity, setSelectedCity] = useState(null);
-  const [showCityLabel, setShowCityLabel] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredCities, setFilteredCities] = useState([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
-  const mapRef = useRef(null);
-  const searchInputRef = useRef(null);
-
-  // Define cities with individual styling and positioning
-  const cities = [
-    // Northeast
-    { 
-      name: 'New York', 
-      coordinates: [80, 35], 
-      region: 'Northeast',
-      size: 1.3,
-      population: 8336817,
-      vulnerabilityScore: 78
-    },
-    { 
-      name: 'Boston', 
-      coordinates: [82, 33], 
-      region: 'Northeast',
-      size: 1.2,
-      population: 675647,
-      vulnerabilityScore: 72
-    },
-    { 
-      name: 'Philadelphia', 
-      coordinates: [77, 37.5], 
-      region: 'Northeast',
-      population: 1526006,
-      vulnerabilityScore: 69
-    },
-    { 
-      name: 'Pittsburgh', 
-      coordinates: [72, 36.5], 
-      region: 'Northeast',
-      population: 302407,
-      vulnerabilityScore: 63
-    },
-    
-    // Midwest
-    { 
-      name: 'Chicago', 
-      coordinates: [62, 37], 
-      region: 'Midwest',
-      size: 1.3,
-      population: 2746388,
-      vulnerabilityScore: 75
-    },
-    { 
-      name: 'Detroit', 
-      coordinates: [66, 35], 
-      region: 'Midwest',
-      population: 677116,
-      vulnerabilityScore: 81
-    },
-    { 
-      name: 'Minneapolis', 
-      coordinates: [55, 29], 
-      region: 'Midwest',
-      population: 425336,
-      vulnerabilityScore: 58
-    },
-    { 
-      name: 'St. Louis', 
-      coordinates: [58, 44], 
-      region: 'Midwest',
-      population: 308174,
-      vulnerabilityScore: 64
-    },
-    { 
-      name: 'Cincinnati', 
-      coordinates: [66.7, 41.5], 
-      region: 'Midwest',
-      population: 301394,
-      vulnerabilityScore: 59
-    },
-    
-    // South
-    { 
-      name: 'Atlanta', 
-      coordinates: [68, 53], 
-      region: 'South',
-      size: 1.2,
-      population: 498715,
-      vulnerabilityScore: 68
-    },
-    { 
-      name: 'Miami', 
-      coordinates: [75.5, 68], 
-      region: 'South',
-      size: 1.2,
-      population: 442241,
-      vulnerabilityScore: 85
-    },
-    { 
-      name: 'Houston', 
-      coordinates: [52, 63], 
-      region: 'South',
-      size: 1.3,
-      population: 2304580,
-      vulnerabilityScore: 79
-    },
-    { 
-      name: 'Dallas', 
-      coordinates: [52, 57], 
-      region: 'South',
-      size: 1.2,
-      population: 1345047,
-      vulnerabilityScore: 71
-    },
-    { 
-      name: 'San Antonio', 
-      coordinates: [48.5, 63], 
-      region: 'South',
-      population: 1434625,
-      vulnerabilityScore: 67
-    },
-    
-    // West
-    { 
-      name: 'Los Angeles', 
-      coordinates: [22.5, 49], 
-      region: 'West',
-      size: 1.3,
-      population: 3979576,
-      vulnerabilityScore: 83
-    },
-    { 
-      name: 'San Francisco', 
-      coordinates: [18.5, 39], 
-      region: 'West',
-      size: 1.2,
-      population: 874961,
-      vulnerabilityScore: 80
-    },
-    { 
-      name: 'Seattle', 
-      coordinates: [23.5, 21], 
-      region: 'West',
-      size: 1.2,
-      population: 737015,
-      vulnerabilityScore: 73
-    },
-    { 
-      name: 'Phoenix', 
-      coordinates: [30, 53], 
-      region: 'West',
-      population: 1608139,
-      vulnerabilityScore: 77
-    },
-    { 
-      name: 'Denver', 
-      coordinates: [41, 42], 
-      region: 'West',
-      size: 1.1,
-      population: 705576,
-      vulnerabilityScore: 62
-    },
-    { 
-      name: 'San Diego', 
-      coordinates: [23.5, 51.5], 
-      region: 'West',
-      population: 1425976,
-      vulnerabilityScore: 70
-    }
-  ];
-
-  // Region centers for labels
-  const regions = {
-    'Northeast': { coordinates: [80, 30] },
-    'Midwest': { coordinates: [57, 27] },
-    'South': { coordinates: [65, 50] },
-    'West': { coordinates: [30, 35] }
-  };
-
-  // Enhanced search functionality
-  const handleSearchInput = (e) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
-    
-    if (term.length < 2) {
-      setFilteredCities([]);
-      setShowSearchResults(false);
-      return;
-    }
-    
-    // Search by city name, region, or attributes
-    const filtered = cities.filter(city => 
-      city.name.toLowerCase().includes(term) || 
-      city.region.toLowerCase().includes(term) ||
-      (powerData[city.region]?.status?.toLowerCase() === term)
-    );
-    
-    setFilteredCities(filtered);
-    setShowSearchResults(true);
-  };
-
-  const selectCity = (city) => {
-    setSelectedRegion(city.region);
-    setSelectedCity(city);
-    setShowCityLabel(true);
-    setShowSearchResults(false);
-    setSearchTerm(city.name);
-    
-    // Center the map view on the selected city
-    if (mapRef.current) {
-      // Visual cue - flash the city node
-      const cityNode = document.querySelector(`.city-marker[data-city="${city.name}"]`);
-      if (cityNode) {
-        cityNode.classList.add('flash-highlight');
-        setTimeout(() => {
-          cityNode.classList.remove('flash-highlight');
-        }, 1500);
-      }
-    }
-  };
-
-  // Close the search results when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (searchInputRef.current && !searchInputRef.current.contains(event.target)) {
-        setShowSearchResults(false);
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  useEffect(() => {
-    // Fetch power data for all regions
-    const loadPowerData = async () => {
-      setLoading(true);
-      try {
-        const data = await fetchRegionalPowerData();
-        setPowerData(data);
-      } catch (error) {
-        console.error('Error fetching power data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadPowerData();
-    
-    // Refresh data every 5 minutes
-    const interval = setInterval(loadPowerData, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // When city is selected, show its label for 5 seconds
-  useEffect(() => {
-    if (selectedCity) {
-      setShowCityLabel(true);
-      const timer = setTimeout(() => {
-        setShowCityLabel(false);
-      }, 5000); // Show the city label for 5 seconds
-      
-      return () => clearTimeout(timer);
-    }
-  }, [selectedCity]);
-
-  // Get CSS color based on status
-  const getStatusColor = (region) => {
-    if (!powerData || !powerData[region]) return "var(--healthy-color)";
-    
-    const status = powerData[region].status;
-    switch (status) {
-      case 'critical':
-        return "var(--critical-color)";
-      case 'warning':
-        return "var(--warning-color)";
-      case 'normal':
-      default:
-        return "var(--healthy-color)";
-    }
-  };
-  
-  // Determine color class based on status
-  const getStatusClass = (region) => {
-    if (!powerData || !powerData[region]) return "normal";
-    return powerData[region].status || "normal";
-  };
-  
-  // Get node size for a city (default or custom)
-  const getNodeSize = (city) => {
-    // If this is the selected city, make it slightly larger
-    if (selectedCity && city.name === selectedCity.name) {
-      return (city.size || 1) * 1.5;
-    }
-    return city.size || 1;
-  };
-
-  // Connect cities within the same region
-  const renderConnections = () => {
-    const connections = [];
-    
-    // Create connections between cities in the same region
-    cities.forEach((cityA, indexA) => {
-      cities.forEach((cityB, indexB) => {
-        // Only connect cities in the same region and avoid duplicate connections
-        if (indexA < indexB && cityA.region === cityB.region) {
-          const [x1, y1] = cityA.coordinates;
-          const [x2, y2] = cityB.coordinates;
-          
-          connections.push(
-            <line
-              key={`${cityA.name}-${cityB.name}`}
-              x1={`${x1}%`}
-              y1={`${y1}%`}
-              x2={`${x2}%`}
-              y2={`${y2}%`}
-              stroke={getStatusColor(cityA.region)}
-              strokeWidth="0.7"
-              strokeOpacity="0.8"
-              strokeDasharray={selectedRegion && selectedRegion !== cityA.region ? "2,2" : "none"}
-              className={`power-line ${getStatusClass(cityA.region)}`}
-            />
-          );
-        }
-      });
-    });
-    
-    return connections;
-  };
-  
-  // New function for rendering cities - with conditional labels
-  const renderCities = () => {
-    return cities.map(city => {
-      const nodeSize = getNodeSize(city);
-      const isSelected = selectedCity && selectedCity.name === city.name;
-      
-      return (
-        <g
-          key={city.name}
-          data-city={city.name}
-          className={`city-marker ${selectedRegion && selectedRegion !== city.region ? "city-faded" : ""} ${isSelected ? "city-selected" : ""}`}
-          onMouseEnter={() => setHoveredRegion(city.region)}
-          onMouseLeave={() => setHoveredRegion(null)}
-          onClick={() => selectCity(city)}
-        >
-          <circle
-            cx={`${city.coordinates[0]}%`}
-            cy={`${city.coordinates[1]}%`}
-            r={nodeSize}
-            fill={getStatusColor(city.region)}
-            stroke="#fff"
-            strokeWidth="0.3"
-            className={`power-node ${getStatusClass(city.region)}`}
-          />
-          {(isSelected || (hoveredRegion === city.region && !selectedRegion)) && (
-            <text
-              x={`${city.coordinates[0]}%`}
-              y={`${city.coordinates[1] - 2}%`}
-              fontSize="1.8"
-              fontWeight="bold"
-              textAnchor="middle"
-              fill="#000"
-              stroke="#fff"
-              strokeWidth="0.2"
-              paintOrder="stroke"
-              className="city-label"
-            >
-              {city.name}
-            </text>
-          )}
-        </g>
-      );
-    });
-  };
-
-  // Get vulnerability level description
-  const getVulnerabilityLevel = (score) => {
-    if (score >= 80) return { level: 'critical', text: 'High Risk' };
-    if (score >= 70) return { level: 'warning', text: 'Moderate Risk' };
-    return { level: 'normal', text: 'Low Risk' };
-  };
-
-  return (
-    <div className="power-grid-map-container">
-      <div className="map-controls">
-        <div className="search-container" ref={searchInputRef}>
-          <div className="search-input-wrapper">
-            <Search size={18} className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search by city, region, or status..."
-              value={searchTerm}
-              onChange={handleSearchInput}
-              onFocus={() => searchTerm.length >= 2 && setShowSearchResults(true)}
-            />
-            {searchTerm && (
-              <button 
-                className="clear-search" 
-                onClick={() => {
-                  setSearchTerm('');
-                  setFilteredCities([]);
-                  setShowSearchResults(false);
-                }}
-              >
-                ×
-              </button>
-            )}
-          </div>
-          
-          {showSearchResults && filteredCities.length > 0 && (
-            <div className="search-results">
-              {filteredCities.map(city => (
-                <div 
-                  key={city.name} 
-                  className={`search-result-item ${getStatusClass(city.region)}`}
-                  onClick={() => selectCity(city)}
-                >
-                  <div className="result-main">
-                    <span className="result-city">{city.name}</span>
-                    <span className="result-region">{city.region}</span>
-                  </div>
-                  <div className="result-status" style={{ backgroundColor: getStatusColor(city.region) }}></div>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {showSearchResults && filteredCities.length === 0 && searchTerm.length >= 2 && (
-            <div className="search-results">
-              <div className="no-results">No cities found matching "{searchTerm}"</div>
-            </div>
-          )}
-        </div>
-        
-        <div className="legend">
-          <div className="legend-item">
-            <span className="legend-color healthy"></span>
-            <span>Normal</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-color warning"></span>
-            <span>Warning</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-color critical"></span>
-            <span>Critical</span>
-          </div>
-        </div>
-      </div>
-      
-      {loading ? (
-        <div className="loading-overlay">
-          <div className="loading-spinner"></div>
-          <div className="loading-text">Loading Power Grid Data...</div>
-        </div>
-      ) : (
-        <div className="map-view-container" ref={mapRef}>
-          {/* USA Map background image */}
-          <img src={usaMapImage} alt="USA Map" className="usa-map-background" />
-          
-          <svg 
-            viewBox="0 0 100 80" 
-            preserveAspectRatio="xMidYMid meet"
-            className="usa-map-overlay"
-          >
-            {/* Power line connections */}
-            {renderConnections()}
-            
-            {/* City markers */}
-            {renderCities()}
-            
-            {/* Region labels */}
-            {Object.entries(regions).map(([regionName, regionData]) => (
-              <text
-                key={regionName}
-                x={`${regionData.coordinates[0]}%`}
-                y={`${regionData.coordinates[1]}%`}
-                fontSize="3"
-                fontWeight="bold"
-                fill={getStatusColor(regionName)}
-                stroke="#fff"
-                strokeWidth="0.7"
-                paintOrder="stroke"
-                opacity="0.8"
-                className={`region-label ${selectedRegion === regionName ? 'region-selected' : ''}`}
-                onClick={() => setSelectedRegion(regionName)}
-              >
-                {regionName}
-              </text>
-            ))}
-          </svg>
-        </div>
-      )}
-      
-      {/* Region details panel */}
-      {selectedRegion && powerData[selectedRegion] && (
-        <div className="region-details-panel">
-          <div className="panel-header">
-            <h2>{selectedRegion} Region</h2>
-            <button className="close-btn" onClick={() => {
-              setSelectedRegion(null);
-              setSelectedCity(null);
-            }}>×</button>
-          </div>
-          
-          <div className="panel-content">
-            <div className="status-indicator">
-              <div className={`status-badge ${powerData[selectedRegion].status}`}>
-                {powerData[selectedRegion].status?.toUpperCase() || 'NORMAL'}
-              </div>
-            </div>
-            
-            {selectedCity && (
-              <div className="selected-city-info">
-                <h3>{selectedCity.name}</h3>
-                <div className="city-meta">
-                  <div className="meta-item">
-                    <span className="meta-label">Population:</span>
-                    <span className="meta-value">{selectedCity.population?.toLocaleString()}</span>
-                  </div>
-                  <div className="meta-item">
-                    <span className="meta-label">Grid Vulnerability:</span>
-                    <span className={`meta-value vulnerability-${getVulnerabilityLevel(selectedCity.vulnerabilityScore).level}`}>
-                      {getVulnerabilityLevel(selectedCity.vulnerabilityScore).text} ({selectedCity.vulnerabilityScore}/100)
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div className="metrics-grid">
-              <div className="metric-card">
-                <h4>Current Load</h4>
-                <p className="metric-value">
-                  <span className="number-value">{powerData[selectedRegion].currentLoad?.toLocaleString()}</span>
-                  <span className="unit-text">MW</span>
-                </p>
-                <p className={`metric-change ${powerData[selectedRegion].loadTrend > 0 ? 'increasing' : 'decreasing'}`}>
-                  {powerData[selectedRegion].loadTrend > 0 ? '↑' : '↓'} 
-                  {Math.abs(powerData[selectedRegion].loadTrend).toFixed(2)}% from yesterday
-                </p>
-              </div>
-              
-              <div className="metric-card">
-                <h4>Capacity</h4>
-                <p className="metric-value">
-                  <span className="number-value">{powerData[selectedRegion].capacity?.toLocaleString()}</span>
-                  <span className="unit-text">MW</span>
-                </p>
-                <div className="capacity-bar">
-                  <div 
-                    className="capacity-fill"
-                    style={{ 
-                      width: `${(powerData[selectedRegion].currentLoad / powerData[selectedRegion].capacity) * 100}%`,
-                      backgroundColor: getStatusColor(selectedRegion)
-                    }}
-                  ></div>
-                </div>
-                <p className="capacity-percentage">
-                  {((powerData[selectedRegion].currentLoad / powerData[selectedRegion].capacity) * 100).toFixed(1)}% of capacity
-                </p>
-              </div>
-            </div>
-            
-            <div className="vulnerabilities-section">
-              <h3>Detected Vulnerabilities</h3>
-              {powerData[selectedRegion].vulnerabilities?.length > 0 ? (
-                <ul className="vulnerability-list">
-                  {powerData[selectedRegion].vulnerabilities.map((vulnerability, index) => (
-                    <li key={index} className={vulnerability.severity}>
-                      <span className="severity-indicator"></span>
-                      <div className="vulnerability-details">
-                        <h4>{vulnerability.title}</h4>
-                        <p>{vulnerability.description}</p>
-                        <div className="vulnerability-actions">
-                          <button className="vulnerability-action-btn">View Details</button>
-                          <button className="vulnerability-action-btn secondary">Dismiss</button>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="no-vulnerabilities">No vulnerabilities detected</p>
-              )}
-            </div>
           </div>
         </div>
       )}

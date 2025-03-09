@@ -7,7 +7,6 @@ import {
   Calendar, 
   BarChart3, 
   Loader2, 
-  LineChart,
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,

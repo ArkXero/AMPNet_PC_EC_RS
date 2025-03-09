@@ -806,4 +806,3 @@ export default {
   fetchHistoricalData,
   fetchCityPowerData
 };
-
